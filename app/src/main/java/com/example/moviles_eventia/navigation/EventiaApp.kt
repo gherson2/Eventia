@@ -1,3 +1,4 @@
+
 package com.example.moviles_eventia.navigation
 
 import androidx.compose.foundation.layout.Arrangement
@@ -10,16 +11,19 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.moviles_eventia.PantallaBienvenidaEventia
+import com.example.moviles_eventia.ui.screens.ExplorarScreen
+import com.example.moviles_eventia.ui.screens.ExplorarViewModel
 
 private enum class Pantalla(
     val ruta: String,
@@ -43,7 +47,6 @@ fun EventiaApp() {
     Scaffold(
         bottomBar = {
             NavigationBar {
-
                 Pantalla.entries.forEach { pantalla ->
 
                     NavigationBarItem(
@@ -80,18 +83,27 @@ fun EventiaApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
 
+            // PANTALLA EXPLORAR
             composable(Pantalla.EXPLORAR.ruta) {
-                PantallaBienvenidaEventia()
+
+                val viewModel: ExplorarViewModel = viewModel()
+
+                val estado by viewModel.uiState.collectAsState()
+
+                ExplorarScreen(estado = estado)
             }
 
+            // PANTALLA MAPA
             composable(Pantalla.MAPA.ruta) {
                 PantallaTemporal("Mapa")
             }
 
+            // PANTALLA FAVORITOS
             composable(Pantalla.FAVORITOS.ruta) {
                 PantallaTemporal("Favoritos")
             }
 
+            // PANTALLA PERFIL
             composable(Pantalla.PERFIL.ruta) {
                 PantallaTemporal("Perfil")
             }
