@@ -11,12 +11,17 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,6 +29,20 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.moviles_eventia.ui.screens.ExplorarScreen
 import com.example.moviles_eventia.ui.screens.ExplorarViewModel
+import com.example.moviles_eventia.AppContainer
+import com.example.moviles_eventia.ui.screens.LugaresViewModel
+import com.example.moviles_eventia.ui.screens.DetalleEventoViewModel
+import com.example.moviles_eventia.ui.screens.DetalleEventoScreen
+import com.example.moviles_eventia.ui.screens.DetalleLugarViewModel
+import com.example.moviles_eventia.ui.screens.DetalleLugarScreen
+
+// Inyección manual por ahora; Hilt queda para una siguiente etapa.
+private val fabricaViewModels = viewModelFactory {
+    initializer { ExplorarViewModel(AppContainer.eventRepository, createSavedStateHandle()) }
+    initializer { LugaresViewModel(AppContainer.eventRepository) }
+    initializer { DetalleEventoViewModel(AppContainer.eventRepository, createSavedStateHandle()) }
+    initializer { DetalleLugarViewModel(AppContainer.eventRepository, createSavedStateHandle()) }
+}
 
 private enum class Pantalla(
     val ruta: String,
@@ -46,7 +65,7 @@ fun EventiaApp() {
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            if (Pantalla.entries.any { it.ruta == rutaActual }) NavigationBar {
                 Pantalla.entries.forEach { pantalla ->
 
                     NavigationBarItem(
@@ -86,11 +105,52 @@ fun EventiaApp() {
             // PANTALLA EXPLORAR
             composable(Pantalla.EXPLORAR.ruta) {
 
-                val viewModel: ExplorarViewModel = viewModel()
+                val viewModel: ExplorarViewModel = viewModel(factory = fabricaViewModels)
+                val lugaresViewModel: LugaresViewModel = viewModel(factory = fabricaViewModels)
 
-                val estado by viewModel.uiState.collectAsState()
+                val estado by viewModel.uiState.collectAsStateWithLifecycle()
+                val lugares by lugaresViewModel.uiState.collectAsStateWithLifecycle()
 
-                ExplorarScreen(estado = estado)
+                ExplorarScreen(
+                    estado = estado,
+                    lugares = lugares,
+                    alBuscar = viewModel::cambiarBusqueda,
+                    alFiltrar = viewModel::cambiarCategoria,
+                    alLimpiar = viewModel::limpiarFiltros,
+                    alActualizar = viewModel::obtenerEventos,
+                    alCargarCategorias = viewModel::obtenerCategorias,
+                    alActualizarLugares = lugaresViewModel::cargar,
+                    alEvento = { navController.navigate("evento/$it") },
+                    alLugar = { navController.navigate("lugar/$it") }
+                )
+            }
+
+            composable(
+                route = "evento/{eventoId}",
+                arguments = listOf(navArgument("eventoId") { type = NavType.IntType })
+            ) {
+                val vm: DetalleEventoViewModel = viewModel(factory = fabricaViewModels)
+                val estado by vm.uiState.collectAsStateWithLifecycle()
+                DetalleEventoScreen(
+                    estado = estado,
+                    alVolver = { navController.popBackStack() },
+                    alActualizar = vm::cargar,
+                    alLugar = { navController.navigate("lugar/$it") }
+                )
+            }
+
+            composable(
+                route = "lugar/{lugarId}",
+                arguments = listOf(navArgument("lugarId") { type = NavType.IntType })
+            ) {
+                val vm: DetalleLugarViewModel = viewModel(factory = fabricaViewModels)
+                val estado by vm.uiState.collectAsStateWithLifecycle()
+                DetalleLugarScreen(
+                    estado = estado,
+                    alVolver = { navController.popBackStack() },
+                    alActualizar = vm::cargar,
+                    alEvento = { navController.navigate("evento/$it") }
+                )
             }
 
             // PANTALLA MAPA
