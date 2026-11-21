@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.moviles_eventia.models.Venue
 import com.example.moviles_eventia.repositories.EventRepository
 import com.example.moviles_eventia.repositories.mensajeParaUsuario
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +20,8 @@ data class LugaresUiState(
     val error: String? = null
 )
 
-class LugaresViewModel(private val repositorio: EventRepository) : ViewModel() {
+@HiltViewModel
+class LugaresViewModel @Inject constructor(private val repositorio: EventRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(LugaresUiState())
     val uiState = _uiState.asStateFlow()
     private var consulta: Job? = null

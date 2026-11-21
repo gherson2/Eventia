@@ -1,8 +1,9 @@
-# Eventia · avance de catálogo y lugares
+# Eventia · catálogo, lugares e inyección con Hilt
 
 Aplicación Android del proyecto final de Programación de Aplicaciones Móviles 1.
-Esta etapa adapta únicamente catálogo, detalles y lugares del proyecto de referencia
-`25`, conservando el paquete y la configuración de `Pro_final_Moviles`.
+Se adaptaron catálogo, detalles y lugares del proyecto de referencia `25`,
+conservando el paquete y la configuración de `Pro_final_Moviles`. En el siguiente
+avance se integró Hilt para gestionar las dependencias existentes.
 No representa la entrega completa ni una calificación.
 
 ## Funciones de esta etapa
@@ -22,6 +23,8 @@ No representa la entrega completa ni una calificación.
 - ViewModel conserva datos durante la rotación; SavedStateHandle guarda los filtros,
   y rememberLazyListState conserva la posición de las listas al volver.
   La comprobación visual de estos escenarios en dispositivo sigue pendiente.
+- Inyección con Hilt: API y repositorio singleton, cuatro ViewModel con
+  `@HiltViewModel` y creación por destino mediante `hiltViewModel()`.
 
 ## Configuración
 
@@ -66,6 +69,8 @@ Se mantiene la configuración original del proyecto, no la de `25`:
 | Navigation Compose | 2.10.2 |
 | Retrofit / Gson converter | 3.0.0 |
 | Coil | 2.7.0 |
+| Hilt / Hilt Navigation Compose | 2.59.2 / 1.2.0 |
+| KSP | 2.3.4 |
 | Desugaring de java.time en Android 24–25 | desugar_jdk_libs 2.1.5 |
 | Pruebas | JUnit 4.13.2, Coroutines Test 1.10.2, MockWebServer 4.12.0 |
 
@@ -86,12 +91,24 @@ Screen → ViewModel → EventRepository → EventRepositoryImpl → EventiaApi 
 - `repositories/`: interfaz, consumo de API, conversión y filtrado de próximos eventos.
 - `ui/screens/`: pantallas y ViewModel con estado observable.
 - `ui/components/`: tarjetas, imágenes, filtros, estados e indicaciones reutilizables.
-- `navigation/EventiaApp.kt`: rutas con argumentos y fábricas de ViewModel.
-- `AppContainer.kt`: composición manual de las dependencias existentes.
+- `navigation/EventiaApp.kt`: rutas con argumentos y creación de ViewModel con Hilt.
+- `EventiaApplication.kt`: inicio del grafo de Hilt con `@HiltAndroidApp`.
+- `di/RedModule.kt`: construcción de Retrofit y la API con `@Provides` y `@Singleton`.
+- `di/RepositoriosModule.kt`: vínculo de la interfaz del repositorio con su
+  implementación mediante `@Binds` y `@Singleton`.
 
 La UI no accede a Retrofit y no recibe DTO.
-**Hilt todavía no está implementado**; la composición manual es transitoria y no
-satisface por sí sola ese requisito obligatorio de la consigna.
+Hilt reemplaza `AppContainer`, `RetrofitClient` y las fábricas manuales de ViewModel.
+La actividad usa `@AndroidEntryPoint`. Cada ViewModel recibe la interfaz
+`EventRepository` mediante su constructor `@Inject`; los que necesitan filtros o
+identificadores también reciben `SavedStateHandle`.
+
+Retrofit, API y repositorio se comparten durante la vida de la aplicación.
+Los ViewModel pertenecen a su destino de navegación, no son singleton. Hilt
+conserva la integración con los argumentos `eventoId` y `lugarId`.
+Las pruebas JVM siguen construyendo los ViewModel con un repositorio de prueba:
+no necesitan iniciar Android ni hacer solicitudes al servidor real.
+Consulta [docs/INYECCION_HILT.md](docs/INYECCION_HILT.md) para una explicación breve.
 
 ### Endpoints utilizados
 
@@ -138,6 +155,14 @@ pendientes de comprobar en dispositivo.
 - No se instaló ni se ejecutó esta versión en el teléfono. Las comprobaciones visuales,
   modo avión y rotación siguen pendientes.
 
+### Verificación del avance con Hilt
+
+- `assembleDebug`, `testDebugUnitTest` y `lintDebug` completados correctamente.
+- **26 pruebas JVM aprobadas**, incluidas dos nuevas para los proveedores de red.
+- KSP y Hilt generaron y compilaron el grafo de dependencias.
+- Lint reportó 21 advertencias, sin errores bloqueantes.
+- El arranque real y la navegación con Hilt en dispositivo siguen pendientes.
+
 ## Lo que sigue pendiente
 
 - Favoritos Room con Deshacer.
@@ -145,7 +170,6 @@ pendientes de comprobar en dispositivo.
 - Registro, login, logout y sesión persistida en DataStore.
 - Inscripción/cancelación, manejo de 401/409 y mis inscripciones.
 - Mapa con marcadores, resumen y filtro de categoría.
-- Inyección mediante Hilt.
 - Validación completa de accesibilidad, tamaños de pantalla y rotación.
 - Video final, documentación completa de la entrega y etiqueta `v1.0` cuando corresponda.
 

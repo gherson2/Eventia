@@ -8,6 +8,8 @@ import com.example.moviles_eventia.models.Event
 import com.example.moviles_eventia.models.filtrarEventos
 import com.example.moviles_eventia.repositories.EventRepository
 import com.example.moviles_eventia.repositories.mensajeParaUsuario
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -26,7 +28,8 @@ data class ExplorarUiState(
     val errorCategorias: String? = null
 )
 
-class ExplorarViewModel(
+@HiltViewModel
+class ExplorarViewModel @Inject constructor(
     private val repositorio: EventRepository,
     private val savedState: SavedStateHandle
 ) : ViewModel() {

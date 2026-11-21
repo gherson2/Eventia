@@ -7,6 +7,8 @@ import com.example.moviles_eventia.models.Event
 import com.example.moviles_eventia.models.Venue
 import com.example.moviles_eventia.repositories.EventRepository
 import com.example.moviles_eventia.repositories.mensajeParaUsuario
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +25,8 @@ data class DetalleLugarUiState(
     val errorEventos: String? = null
 )
 
-class DetalleLugarViewModel(
+@HiltViewModel
+class DetalleLugarViewModel @Inject constructor(
     private val repositorio: EventRepository,
     savedState: SavedStateHandle
 ) : ViewModel() {

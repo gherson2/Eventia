@@ -6,6 +6,8 @@ Las verificaciones automáticas de repositorio/ViewModel no certifican la interf
 | Escenario | Resultado esperado | Estado |
 |---|---|---|
 | Abrir Explorar con Internet | Datos de la API, imágenes y fechas locales | Pendiente |
+| Arrancar tras integrar Hilt | Application y actividad inicializan el grafo sin cierres | Pendiente |
+| Abrir evento y lugar con Hilt | ViewModel recibe el id correcto mediante SavedStateHandle | Pendiente |
 | Buscar por nombre y elegir categoría | Solo coincidencias de ambas condiciones | Pendiente |
 | Escribir rápidamente | Consultar después de 300 ms sin nuevos cambios | Cubierto en JVM; UI pendiente |
 | Limpiar filtros | Restablecer el catálogo completo de próximos eventos | Cubierto en JVM; UI pendiente |

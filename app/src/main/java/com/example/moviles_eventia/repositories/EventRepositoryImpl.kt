@@ -4,8 +4,9 @@ package com.example.moviles_eventia.repositories
 import com.example.moviles_eventia.api.EventiaApi
 import com.example.moviles_eventia.models.Event
 import com.example.moviles_eventia.models.filtrarEventos
+import javax.inject.Inject
 
-class EventRepositoryImpl(
+class EventRepositoryImpl @Inject constructor(
     private val api: EventiaApi
 ) : EventRepository {
 

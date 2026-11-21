@@ -15,11 +15,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.createSavedStateHandle
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -29,20 +26,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.moviles_eventia.ui.screens.ExplorarScreen
 import com.example.moviles_eventia.ui.screens.ExplorarViewModel
-import com.example.moviles_eventia.AppContainer
 import com.example.moviles_eventia.ui.screens.LugaresViewModel
 import com.example.moviles_eventia.ui.screens.DetalleEventoViewModel
 import com.example.moviles_eventia.ui.screens.DetalleEventoScreen
 import com.example.moviles_eventia.ui.screens.DetalleLugarViewModel
 import com.example.moviles_eventia.ui.screens.DetalleLugarScreen
-
-// Inyección manual por ahora; Hilt queda para una siguiente etapa.
-private val fabricaViewModels = viewModelFactory {
-    initializer { ExplorarViewModel(AppContainer.eventRepository, createSavedStateHandle()) }
-    initializer { LugaresViewModel(AppContainer.eventRepository) }
-    initializer { DetalleEventoViewModel(AppContainer.eventRepository, createSavedStateHandle()) }
-    initializer { DetalleLugarViewModel(AppContainer.eventRepository, createSavedStateHandle()) }
-}
 
 private enum class Pantalla(
     val ruta: String,
@@ -105,8 +93,8 @@ fun EventiaApp() {
             // PANTALLA EXPLORAR
             composable(Pantalla.EXPLORAR.ruta) {
 
-                val viewModel: ExplorarViewModel = viewModel(factory = fabricaViewModels)
-                val lugaresViewModel: LugaresViewModel = viewModel(factory = fabricaViewModels)
+                val viewModel: ExplorarViewModel = hiltViewModel()
+                val lugaresViewModel: LugaresViewModel = hiltViewModel()
 
                 val estado by viewModel.uiState.collectAsStateWithLifecycle()
                 val lugares by lugaresViewModel.uiState.collectAsStateWithLifecycle()
@@ -129,7 +117,7 @@ fun EventiaApp() {
                 route = "evento/{eventoId}",
                 arguments = listOf(navArgument("eventoId") { type = NavType.IntType })
             ) {
-                val vm: DetalleEventoViewModel = viewModel(factory = fabricaViewModels)
+                val vm: DetalleEventoViewModel = hiltViewModel()
                 val estado by vm.uiState.collectAsStateWithLifecycle()
                 DetalleEventoScreen(
                     estado = estado,
@@ -143,7 +131,7 @@ fun EventiaApp() {
                 route = "lugar/{lugarId}",
                 arguments = listOf(navArgument("lugarId") { type = NavType.IntType })
             ) {
-                val vm: DetalleLugarViewModel = viewModel(factory = fabricaViewModels)
+                val vm: DetalleLugarViewModel = hiltViewModel()
                 val estado by vm.uiState.collectAsStateWithLifecycle()
                 DetalleLugarScreen(
                     estado = estado,
