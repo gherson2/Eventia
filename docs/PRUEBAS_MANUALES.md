@@ -27,6 +27,13 @@ Las verificaciones automáticas de repositorio/ViewModel no certifican la interf
 | Cómo llegar con aplicación de mapas | Abrir la ubicación en una aplicación externa | Pendiente |
 | Cómo llegar sin aplicación compatible | Informar sin cerrar la app | Pendiente |
 | Texto grande y pantalla pequeña | Poder leer y utilizar las acciones | Pendiente |
+| Guardar desde catálogo o detalle | Corazón y lista Favoritos reflejan el cambio | Pruebas JVM; UI pendiente |
+| Guardar el mismo evento otra vez | No duplicar la fila | Prueba JVM; Room real pendiente |
+| Quitar en Favoritos y tocar Deshacer | Recuperar el mismo evento | Prueba JVM; snackbar real pendiente |
+| Cerrar forzadamente y reabrir | Mantener favoritos guardados en Room | Prueba instrumentada añadida; ejecución pendiente |
+| Listar favoritos en modo avión | Mostrar las copias locales y permitir quitarlas | Pendiente; no incluye abrir detalle offline |
+| Reabrir una base Room de prueba | Mantener favorito y poder eliminarlo | FavoritosPersistenciaTest añadido; ejecución pendiente |
+| Abrir detalle de favorito sin red | Mostrar detalle local | No implementado en esta etapa |
 
 ## Verificación HTTP de referencia
 

@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -58,9 +60,15 @@ fun ImagenEvento(url: String?, nombre: String, modifier: Modifier = Modifier) {
     )
 }
 
-// Reutilizada en el catálogo y en los próximos eventos de un lugar.
+// Reutilizada en catálogo, favoritos y próximos eventos de un lugar.
 @Composable
-fun TarjetaEvento(evento: Event, alSeleccionar: () -> Unit) {
+fun TarjetaEvento(
+    evento: Event,
+    esFavorito: Boolean = false,
+    favoritoHabilitado: Boolean = true,
+    alCambiarFavorito: (() -> Unit)? = null,
+    alSeleccionar: () -> Unit
+) {
     OutlinedCard(onClick = alSeleccionar, modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ImagenEvento(evento.imageUrl, evento.title, Modifier.size(80.dp))
@@ -85,6 +93,18 @@ fun TarjetaEvento(evento: Event, alSeleccionar: () -> Unit) {
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text("Cupos: ${evento.availableSpots?.toString() ?: "No informados"}",
                     style = MaterialTheme.typography.bodySmall)
+            }
+            if (alCambiarFavorito != null) IconToggleButton(
+                checked = esFavorito,
+                onCheckedChange = { alCambiarFavorito() },
+                enabled = favoritoHabilitado
+            ) {
+                Icon(
+                    if (esFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (esFavorito) "Quitar ${evento.title} de favoritos"
+                        else "Guardar ${evento.title} en favoritos",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }

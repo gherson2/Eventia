@@ -10,11 +10,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.moviles_eventia.ui.components.*
+import com.example.moviles_eventia.models.Event
 
 @Composable
 fun ExplorarScreen(
     estado: ExplorarUiState,
     lugares: LugaresUiState,
+    favoritos: FavoritosUiState,
+    alCambiarFavorito: (Event) -> Unit,
     alBuscar: (String) -> Unit,
     alFiltrar: (Int?) -> Unit,
     alLimpiar: () -> Unit,
@@ -71,7 +74,13 @@ fun ExplorarScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(estado.eventos, key = { it.id }) { evento ->
-                        TarjetaEvento(evento) { alEvento(evento.id) }
+                        TarjetaEvento(
+                            evento = evento,
+                            esFavorito = favoritos.eventos.any { it.id == evento.id },
+                            favoritoHabilitado = !favoritos.cargando && !favoritos.guardando && favoritos.error == null,
+                            alCambiarFavorito = { alCambiarFavorito(evento) },
+                            alSeleccionar = { alEvento(evento.id) }
+                        )
                     }
                 }
             }

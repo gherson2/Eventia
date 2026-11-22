@@ -11,10 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.moviles_eventia.ui.components.*
+import com.example.moviles_eventia.models.Event
 
 @Composable
 fun DetalleLugarScreen(
     estado: DetalleLugarUiState,
+    favoritos: FavoritosUiState,
+    alCambiarFavorito: (Event) -> Unit,
     alVolver: () -> Unit,
     alActualizar: () -> Unit,
     alEvento: (Int) -> Unit
@@ -57,7 +60,13 @@ fun DetalleLugarScreen(
                     item { Text("No hay próximos eventos en este lugar.") }
                 }
                 items(estado.eventos, key = { it.id }) { evento ->
-                    TarjetaEvento(evento) { alEvento(evento.id) }
+                    TarjetaEvento(
+                        evento = evento,
+                        esFavorito = favoritos.eventos.any { it.id == evento.id },
+                        favoritoHabilitado = !favoritos.cargando && !favoritos.guardando && favoritos.error == null,
+                        alCambiarFavorito = { alCambiarFavorito(evento) },
+                        alSeleccionar = { alEvento(evento.id) }
+                    )
                 }
             }
         }

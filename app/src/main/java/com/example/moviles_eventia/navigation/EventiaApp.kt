@@ -10,7 +10,13 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +37,9 @@ import com.example.moviles_eventia.ui.screens.DetalleEventoViewModel
 import com.example.moviles_eventia.ui.screens.DetalleEventoScreen
 import com.example.moviles_eventia.ui.screens.DetalleLugarViewModel
 import com.example.moviles_eventia.ui.screens.DetalleLugarScreen
+import com.example.moviles_eventia.ui.screens.FavoritosViewModel
+import com.example.moviles_eventia.ui.screens.FavoritosScreen
+import com.example.moviles_eventia.models.Event
 
 private enum class Pantalla(
     val ruta: String,
@@ -47,11 +56,33 @@ private enum class Pantalla(
 fun EventiaApp() {
 
     val navController = rememberNavController()
+    // Un único observador de Room comparte el estado entre todos los destinos.
+    val favoritosVm: FavoritosViewModel = hiltViewModel()
+    val favoritos by favoritosVm.uiState.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    val cambiarFavorito: (Event) -> Unit = { evento ->
+        favoritosVm.cambiarFavorito(evento, guardar = favoritos.eventos.none { it.id == evento.id })
+    }
+
+    LaunchedEffect(favoritosVm, snackbar) {
+        favoritosVm.mensajes.collect { mensaje ->
+            val resultado = snackbar.showSnackbar(
+                message = mensaje.texto,
+                actionLabel = if (mensaje.quitado != null) "Deshacer" else null,
+                duration = SnackbarDuration.Long,
+                withDismissAction = true
+            )
+            if (resultado == SnackbarResult.ActionPerformed) {
+                mensaje.quitado?.let(favoritosVm::restaurar)
+            }
+        }
+    }
 
     val entradaActual by navController.currentBackStackEntryAsState()
     val rutaActual = entradaActual?.destination?.route
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             if (Pantalla.entries.any { it.ruta == rutaActual }) NavigationBar {
                 Pantalla.entries.forEach { pantalla ->
@@ -102,6 +133,8 @@ fun EventiaApp() {
                 ExplorarScreen(
                     estado = estado,
                     lugares = lugares,
+                    favoritos = favoritos,
+                    alCambiarFavorito = cambiarFavorito,
                     alBuscar = viewModel::cambiarBusqueda,
                     alFiltrar = viewModel::cambiarCategoria,
                     alLimpiar = viewModel::limpiarFiltros,
@@ -121,6 +154,9 @@ fun EventiaApp() {
                 val estado by vm.uiState.collectAsStateWithLifecycle()
                 DetalleEventoScreen(
                     estado = estado,
+                    esFavorito = favoritos.eventos.any { it.id == estado.evento?.id },
+                    favoritoHabilitado = !favoritos.cargando && !favoritos.guardando && favoritos.error == null,
+                    alCambiarFavorito = cambiarFavorito,
                     alVolver = { navController.popBackStack() },
                     alActualizar = vm::cargar,
                     alLugar = { navController.navigate("lugar/$it") }
@@ -135,6 +171,8 @@ fun EventiaApp() {
                 val estado by vm.uiState.collectAsStateWithLifecycle()
                 DetalleLugarScreen(
                     estado = estado,
+                    favoritos = favoritos,
+                    alCambiarFavorito = cambiarFavorito,
                     alVolver = { navController.popBackStack() },
                     alActualizar = vm::cargar,
                     alEvento = { navController.navigate("evento/$it") }
@@ -148,7 +186,12 @@ fun EventiaApp() {
 
             // PANTALLA FAVORITOS
             composable(Pantalla.FAVORITOS.ruta) {
-                PantallaTemporal("Favoritos")
+                FavoritosScreen(
+                    estado = favoritos,
+                    alReintentar = favoritosVm::cargar,
+                    alEvento = { navController.navigate("evento/$it") },
+                    alQuitar = { favoritosVm.cambiarFavorito(it, guardar = false) }
+                )
             }
 
             // PANTALLA PERFIL

@@ -10,11 +10,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.moviles_eventia.models.fechaLocal
+import com.example.moviles_eventia.models.Event
 import com.example.moviles_eventia.ui.components.*
 
 @Composable
 fun DetalleEventoScreen(
     estado: DetalleEventoUiState,
+    esFavorito: Boolean,
+    favoritoHabilitado: Boolean,
+    alCambiarFavorito: (Event) -> Unit,
     alVolver: () -> Unit,
     alActualizar: () -> Unit,
     alLugar: (Int) -> Unit
@@ -36,6 +40,15 @@ fun DetalleEventoScreen(
                 if (estado.cargando) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 estado.error?.let { item { Aviso(it, alActualizar) } }
                 item { ImagenEvento(evento.imageUrl, evento.title, Modifier.fillMaxWidth().height(210.dp)) }
+                item {
+                    OutlinedButton(
+                        onClick = { alCambiarFavorito(evento) },
+                        enabled = favoritoHabilitado,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (esFavorito) "Quitar de favoritos" else "Guardar en favoritos")
+                    }
+                }
                 item {
                     Text(evento.category.name, color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelLarge)
