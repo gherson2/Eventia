@@ -23,6 +23,7 @@ class EventRepositoryTest {
     private lateinit var api: EventiaApi
     private lateinit var favoritos: FavoritosPrueba
     private lateinit var conectividad: ConectividadPrueba
+    private lateinit var cache: CacheCatalogoPrueba
     private val eventoJson = """
         {
           "id":42,"title":"Jazz en vivo","summary":"Música","description":"Descripción completa",
@@ -42,7 +43,8 @@ class EventRepositoryTest {
             .build().create(EventiaApi::class.java)
         favoritos = FavoritosPrueba()
         conectividad = ConectividadPrueba()
-        repositorio = EventRepositoryImpl(api, favoritos, conectividad)
+        cache = CacheCatalogoPrueba()
+        repositorio = EventRepositoryImpl(api, favoritos, conectividad, cache, Gson())
     }
 
     @After fun terminar() { servidor.shutdown() }
@@ -160,7 +162,7 @@ class EventRepositoryTest {
         val apiFallida = object : EventiaApi by api {
             override suspend fun obtenerEvento(id: Int): EventDto = throw IOException("Sin respuesta")
         }
-        val repo = EventRepositoryImpl(apiFallida, favoritos, conectividad)
+        val repo = EventRepositoryImpl(apiFallida, favoritos, conectividad, cache, Gson())
         val detalle = repo.obtenerDetalleEvento(guardado.id)
         assertEquals(guardado, detalle.evento)
         assertTrue(detalle.esCopiaGuardada)
@@ -189,7 +191,7 @@ class EventRepositoryTest {
         val apiCancelada = object : EventiaApi by api {
             override suspend fun obtenerEvento(id: Int): EventDto = throw CancellationException("Cancelado")
         }
-        val repo = EventRepositoryImpl(apiCancelada, favoritos, conectividad)
+        val repo = EventRepositoryImpl(apiCancelada, favoritos, conectividad, cache, Gson())
         try {
             repo.obtenerDetalleEvento(42)
             fail("Debe propagar la cancelación")
@@ -203,7 +205,7 @@ class EventRepositoryTest {
         val apiFallida = object : EventiaApi by api {
             override suspend fun obtenerEvento(id: Int): EventDto = throw fallo
         }
-        val repo = EventRepositoryImpl(apiFallida, favoritos, conectividad)
+        val repo = EventRepositoryImpl(apiFallida, favoritos, conectividad, cache, Gson())
         try {
             repo.obtenerDetalleEvento(42)
             fail("No existe copia para recuperar")

@@ -124,7 +124,7 @@ fun EventiaApp() {
             if (conectado == false) {
                 Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
                     Text(
-                        "Sin conexión. Puedes consultar tus favoritos guardados.",
+                        "Sin conexión. Puedes consultar los datos guardados en este dispositivo.",
                         Modifier.fillMaxWidth().padding(12.dp),
                         style = MaterialTheme.typography.bodySmall
                     )

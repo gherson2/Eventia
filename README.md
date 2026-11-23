@@ -32,6 +32,8 @@ No representa la entrega completa ni una calificación.
 - Detalle básico de favoritos sin conexión, con identificación de la copia local
   y advertencia de que los cupos pueden haber cambiado.
 - Aviso global de conexión mediante las capacidades de red informadas por Android.
+- Catálogo y categorías en caché Room para consultar los últimos datos descargados,
+  con antigüedad visible, filtros locales y actualización manual.
 
 ## Configuración
 
@@ -126,7 +128,7 @@ Consulta [docs/INYECCION_HILT.md](docs/INYECCION_HILT.md) para una explicación 
 
 ### Persistencia de favoritos
 
-Room utiliza `eventia.db`, versión 1, con la tabla `favoritos` y el id del evento
+Room utiliza `eventia.db`, versión 2, con la tabla `favoritos` y el id del evento
 como clave primaria. Cada fila conserva una copia JSON completa del modelo de
 dominio (descripción, fechas, categoría, lugar y cupos). Guardar otra vez el mismo
 id reemplaza su copia y no lo duplica.
@@ -136,6 +138,30 @@ asíncronas; la conversión JSON trabaja en `Dispatchers.IO`. Los cambios se ref
 en las pantallas sin tener que recargar el catálogo.
 El esquema se exporta en `app/schemas/` para preparar futuras migraciones;
 no se habilitó una recreación destructiva de la base.
+
+### Caché del catálogo
+
+`EventRepository.observarCatalogo` decide entre red y datos locales y emite un
+estado observable. La pantalla no accede al DAO ni a Retrofit:
+
+- Muestra primero una copia disponible mientras solicita la actualización.
+- Sin conexión, conserva los últimos eventos y muestra cuándo se guardaron.
+- Si falla la solicitud, conserva los datos y muestra un error no bloqueante.
+- Una respuesta remota válida reemplaza su copia, incluso si la lista está vacía.
+- Si no hay datos guardados, informa el error; no inventa una lista exitosa.
+- Las búsquedas combinadas con categoría tienen claves separadas y nunca
+  sustituyen el catálogo completo. Para la consulta local se elige la copia
+  aplicable más reciente y se filtran nombre, categoría y fechas.
+- Las categorías también se guardan para permitir el filtrado sin conexión.
+- Si el guardado falla, la respuesta de red se muestra igualmente con un aviso.
+
+La tabla `cache_catalogo` guarda clave, JSON y fecha en milisegundos. La conversión
+y lectura del catálogo se ejecutan en `Dispatchers.IO`. La antigüedad se comunica
+en minutos, horas o días al representar el estado.
+
+Se incluye una migración explícita de Room 1 a 2 que agrega la tabla de caché
+**sin borrar los favoritos existentes**. Se conservan ambos esquemas en
+`app/schemas/`. No se usa migración destructiva.
 
 ### Detalle sin conexión y conectividad
 
@@ -159,8 +185,10 @@ usa `ACCESS_NETWORK_STATE`, un permiso normal sin diálogo; libera el callback
 cuando deja de observarse. Una red validada no garantiza que el servidor esté
 disponible, por eso también se manejan fallos de la solicitud.
 
-**Límites:** las imágenes remotas no se garantizan sin Internet. El catálogo
-general y los detalles completos de lugares todavía no tienen caché persistente.
+**Límites:** las imágenes remotas no se garantizan sin Internet. Los detalles
+completos de lugares no tienen caché persistente. El detalle offline de un evento
+sigue garantizado únicamente si está guardado como favorito, no por aparecer en
+la caché del catálogo.
 La copia de un favorito se reemplaza al volver a guardarlo, no se sincroniza
 automáticamente durante la consulta.
 
@@ -208,6 +236,14 @@ por compilar el APK de pruebas. Para ejecutarla expresamente:
 .\gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.example.moviles_eventia.db.FavoritosPersistenciaTest"
 ```
 
+`CatalogoMigracionTest` verifica la migración de una base de prueba versión 1,
+la conservación del favorito y la reapertura de la caché. No se considera
+ejecutado por compilarlo; requiere un dispositivo o emulador:
+
+```powershell
+.\gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.example.moviles_eventia.db.CatalogoMigracionTest"
+```
+
 Consulta [docs/PRUEBAS_MANUALES.md](docs/PRUEBAS_MANUALES.md) para los escenarios
 pendientes de comprobar en dispositivo.
 
@@ -248,17 +284,28 @@ pendientes de comprobar en dispositivo.
 - El modo avión, los callbacks reales de Android y la presentación visual siguen
   pendientes de verificar en un dispositivo. No se instaló esta versión.
 
+### Verificación de la caché del catálogo
+
+- Compilación debug, pruebas JVM, Lint y compilación del APK de pruebas completados.
+- **66 pruebas JVM aprobadas**, sin fallos.
+- Lint terminó sin errores bloqueantes; conserva 13 advertencias.
+- Se comprobaron caché antes de red, filtros offline, antigüedad, respuesta vacía,
+  errores de guardado y separación entre búsquedas, catálogo completo y favoritos.
+- La prueba de migración fue compilada, no ejecutada. La migración real, la
+  reapertura en modo avión y la interfaz siguen pendientes de probar en dispositivo.
+
 ## Lo que sigue pendiente
 
 - Comprobar en dispositivo la persistencia de favoritos tras cierre forzado.
 - Comprobar el aviso global y el detalle de favoritos en modo avión y tras recuperar Internet.
-- Caché Room, aviso de antigüedad y funcionamiento sin conexión tras reiniciar.
+- Comprobar en dispositivo la migración Room, la reapertura del catálogo en modo avión
+  y la actualización manual al recuperar conexión.
 - Registro, login, logout y sesión persistida en DataStore.
 - Inscripción/cancelación, manejo de 401/409 y mis inscripciones.
 - Mapa con marcadores, resumen y filtro de categoría.
 - Validación completa de accesibilidad, tamaños de pantalla y rotación.
 - Video final, documentación completa de la entrega y etiqueta `v1.0` cuando corresponda.
 
-Conservar una lista ya cargada ante un fallo **no es una caché persistente**:
-en esta etapa, abrir la app sin Internet todavía no puede recuperar el catálogo.
+El catálogo sin conexión requiere haber descargado datos al menos una vez.
+Los favoritos y la caché se almacenan por separado.
 No se han trasladado las funcionalidades restantes ni el historial Git del proyecto `25`.

@@ -16,7 +16,7 @@ Las verificaciones automáticas de repositorio/ViewModel no certifican la interf
 | Cambiar de pestaña Eventos/Lugares | Conservar la posición de ambas listas | Pendiente |
 | Rotar en lista y detalle | Conservar estado, filtros y posición | Pendiente |
 | Actualizar con modo avión después de cargar datos | Mantener lista y mostrar aviso con reintento | Cubierto con IOException en JVM; modo avión pendiente |
-| Abrir sin Internet desde cero | Error comprensible con reintento, sin cierre | Pendiente; caché aún no implementada |
+| Abrir sin Internet sin datos descargados previamente | Error comprensible con reintento, sin cierre | Prueba JVM; UI pendiente |
 | Abrir evento sin imagen | Mostrar imagen sustituta | Pendiente |
 | Abrir evento sin cupos | Mostrar cero cupos y aviso; inscripción aún no implementada | Pendiente |
 | Evento → lugar → otro evento | Navegar a los detalles correspondientes y poder regresar | Pendiente |
@@ -38,6 +38,12 @@ Las verificaciones automáticas de repositorio/ViewModel no certifican la interf
 | Recuperar conexión y actualizar el detalle | Consultar la API y retirar la marca de copia guardada | Cubierto en JVM; UI pendiente |
 | Perder o recuperar conexión | Mostrar o retirar el aviso global | Estado observable cubierto en JVM; callbacks Android pendientes |
 | Servidor 404 con favorito guardado | Informar evento no disponible, sin borrar el favorito | Cubierto en JVM; UI pendiente |
+| Reabrir el catálogo en modo avión tras descargarlo | Lista local y antigüedad visible | Repositorio cubierto en JVM; dispositivo pendiente |
+| Buscar y filtrar en el catálogo sin conexión | Solo coincidencias de la copia disponible | Prueba JVM; UI pendiente |
+| Actualizar tras recuperar conexión | Reemplazar la copia y retirar la marca de datos guardados | Prueba JVM; UI pendiente |
+| Buscar y luego limpiar filtros | No reemplazar el catálogo completo por los resultados de búsqueda | Prueba JVM; UI pendiente |
+| Migrar una instalación con favoritos | Mantener favoritos al agregar caché Room | CatalogoMigracionTest añadido; ejecución pendiente |
+| Recibir un catálogo vacío desde la API | Reemplazar la caché anterior con una lista vacía válida | Prueba JVM; UI pendiente |
 
 ## Verificación HTTP de referencia
 

@@ -1,6 +1,7 @@
 package com.example.moviles_eventia.ui.screens
 
 import androidx.lifecycle.SavedStateHandle
+import com.example.moviles_eventia.models.EstadoCatalogo
 import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.*
@@ -79,6 +80,59 @@ class ExplorarViewModelTest {
         advanceUntilIdle()
         assertTrue(vm.uiState.value.eventos.isEmpty())
         assertNull(vm.uiState.value.error)
+        assertFalse(vm.uiState.value.cargando)
+    }
+
+    @Test fun muestraLaAntiguedadDeLaCopiaYLaRetiraAlActualizar() = runTest {
+        val repo = RepositorioPrueba()
+        repo.resultadosCatalogo = listOf(EstadoCatalogo(listOf(repo.evento), guardadoEn = 123L))
+        val vm = ExplorarViewModel(repo, SavedStateHandle())
+        advanceUntilIdle()
+        assertEquals(123L, vm.uiState.value.copiaGuardadaEn)
+        assertEquals(listOf(repo.evento), vm.uiState.value.eventos)
+        repo.resultadosCatalogo = listOf(EstadoCatalogo(listOf(repo.evento.copy(title = "Actualizado"))))
+        vm.obtenerEventos()
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.copiaGuardadaEn)
+        assertEquals("Actualizado", vm.uiState.value.eventos.single().title)
+    }
+
+    @Test fun errorSinRespuestaNoBorraLaListaPrevia() = runTest {
+        val repo = RepositorioPrueba()
+        val vm = ExplorarViewModel(repo, SavedStateHandle())
+        advanceUntilIdle()
+        repo.resultadosCatalogo = listOf(
+            EstadoCatalogo(cargando = true),
+            EstadoCatalogo(aviso = "Sin conexión")
+        )
+        vm.obtenerEventos()
+        advanceUntilIdle()
+        assertEquals(listOf(repo.evento), vm.uiState.value.eventos)
+        assertEquals("Sin conexión", vm.uiState.value.error)
+        assertFalse(vm.uiState.value.cargando)
+    }
+
+    @Test fun cacheVaciaEsUnResultadoValidoConAntiguedad() = runTest {
+        val repo = RepositorioPrueba()
+        repo.resultadosCatalogo = listOf(EstadoCatalogo(emptyList(), guardadoEn = 123L))
+        val vm = ExplorarViewModel(repo, SavedStateHandle())
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.eventos.isEmpty())
+        assertEquals(123L, vm.uiState.value.copiaGuardadaEn)
+        assertNull(vm.uiState.value.error)
+        assertTrue(vm.uiState.value.datosDisponibles)
+    }
+
+    @Test fun listaVaciaValidaConFalloDeGuardadoNoSeTrataComoFalloDeCarga() = runTest {
+        val repo = RepositorioPrueba()
+        repo.resultadosCatalogo = listOf(
+            EstadoCatalogo(emptyList(), aviso = "No pudimos guardar la copia")
+        )
+        val vm = ExplorarViewModel(repo, SavedStateHandle())
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.datosDisponibles)
+        assertTrue(vm.uiState.value.eventos.isEmpty())
+        assertNotNull(vm.uiState.value.error)
         assertFalse(vm.uiState.value.cargando)
     }
 }

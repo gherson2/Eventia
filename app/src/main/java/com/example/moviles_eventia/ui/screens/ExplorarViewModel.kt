@@ -25,7 +25,9 @@ data class ExplorarUiState(
     val categoriaId: Int? = null,
     val cargando: Boolean = true,
     val error: String? = null,
-    val errorCategorias: String? = null
+    val errorCategorias: String? = null,
+    val copiaGuardadaEn: Long? = null,
+    val datosDisponibles: Boolean = false
 )
 
 @HiltViewModel
@@ -92,8 +94,18 @@ class ExplorarViewModel @Inject constructor(
             if (esperar) delay(300)
             val filtros = _uiState.value
             try {
-                val eventos = repositorio.obtenerEventos(filtros.busqueda, filtros.categoriaId)
-                _uiState.update { it.copy(eventos = eventos, cargando = false, error = null) }
+                repositorio.observarCatalogo(filtros.busqueda, filtros.categoriaId).collect { resultado ->
+                    _uiState.update {
+                        it.copy(
+                            eventos = resultado.eventos ?: it.eventos,
+                            cargando = resultado.cargando,
+                            error = resultado.aviso,
+                            datosDisponibles = resultado.eventos != null || it.datosDisponibles,
+                            copiaGuardadaEn = if (resultado.eventos != null) resultado.guardadoEn
+                                else it.copiaGuardadaEn
+                        )
+                    }
+                }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 _uiState.update { it.copy(cargando = false, error = e.mensajeParaUsuario()) }

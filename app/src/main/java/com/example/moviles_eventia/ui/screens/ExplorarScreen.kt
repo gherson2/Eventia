@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.moviles_eventia.ui.components.*
 import com.example.moviles_eventia.models.Event
+import com.example.moviles_eventia.models.antiguedadCache
 
 @Composable
 fun ExplorarScreen(
@@ -56,13 +57,23 @@ fun ExplorarScreen(
                 }
             }
             estado.errorCategorias?.let { Aviso("Categorías: $it", alCargarCategorias) }
+            estado.copiaGuardadaEn?.let {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Text("Datos guardados · hace ${antiguedadCache(it)}",
+                        Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall)
+                }
+            }
             if (estado.cargando && estado.eventos.isNotEmpty()) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
             }
-            if (estado.eventos.isNotEmpty()) estado.error?.let { Aviso(it, alActualizar) }
+            if (estado.datosDisponibles) estado.error?.let { Aviso(it, alActualizar) }
             when {
                 estado.cargando && estado.eventos.isEmpty() -> EstadoCargando()
-                estado.eventos.isEmpty() && estado.error != null ->
+                estado.eventos.isEmpty() && estado.error != null && !estado.datosDisponibles ->
                     EstadoVacio("No pudimos cargar los eventos", estado.error, "Reintentar", alActualizar)
                 estado.eventos.isEmpty() ->
                     EstadoVacio("Sin coincidencias", "No hay eventos próximos con estos filtros.",

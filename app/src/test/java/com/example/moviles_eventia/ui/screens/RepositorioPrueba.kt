@@ -5,6 +5,8 @@ import com.example.moviles_eventia.models.Event
 import com.example.moviles_eventia.models.Venue
 import com.example.moviles_eventia.models.filtrarEventos
 import com.example.moviles_eventia.models.DetalleEvento
+import com.example.moviles_eventia.models.EstadoCatalogo
+import kotlinx.coroutines.flow.flow
 import com.example.moviles_eventia.repositories.EventRepository
 
 class RepositorioPrueba : EventRepository {
@@ -14,12 +16,18 @@ class RepositorioPrueba : EventRepository {
     var error: Exception? = null
     var errorEventosLugar: Exception? = null
     var esCopiaGuardada = false
+    var resultadosCatalogo: List<EstadoCatalogo>? = null
     val consultas = mutableListOf<Pair<String, Int?>>()
 
     override suspend fun obtenerEventos(busqueda: String, categoriaId: Int?): List<Event> {
         consultas += busqueda to categoriaId
         error?.let { throw it }
         return filtrarEventos(listOf(evento), busqueda, categoriaId)
+    }
+    override fun observarCatalogo(busqueda: String, categoriaId: Int?) = flow {
+        val resultados = resultadosCatalogo
+        if (resultados == null) emit(EstadoCatalogo(obtenerEventos(busqueda, categoriaId)))
+        else resultados.forEach { emit(it) }
     }
     override suspend fun obtenerCategorias() = listOf(evento.category)
     override suspend fun obtenerEvento(id: Int): Event {
