@@ -29,6 +29,9 @@ No representa la entrega completa ni una calificación.
 - Favoritos persistentes: guardar/quitar desde catálogo, detalle y eventos de un
   lugar. La pestaña Favoritos muestra las copias locales y ofrece **Deshacer**
   al quitar. No necesita cuenta ni solicitudes de red para guardar o listar.
+- Detalle básico de favoritos sin conexión, con identificación de la copia local
+  y advertencia de que los cupos pueden haber cambiado.
+- Aviso global de conexión mediante las capacidades de red informadas por Android.
 
 ## Configuración
 
@@ -94,7 +97,8 @@ Screen → ViewModel → EventRepository → EventRepositoryImpl → EventiaApi 
 - `api/`: endpoints y DTO de red.
 - `models/`: modelos de dominio, validación de coordenadas y fechas.
 - `repositories/`: interfaces, consumo de API, conversión y filtrado de próximos
-  eventos; `FavoritosRepository` encapsula el almacenamiento local.
+  eventos; `FavoritosRepository` encapsula el almacenamiento local y
+  `ConectividadRepository` observa el estado de red.
 - `db/`: base Room, entidad y DAO de favoritos.
 - `ui/screens/`: pantallas y ViewModel con estado observable.
 - `ui/components/`: tarjetas, imágenes, filtros, estados e indicaciones reutilizables.
@@ -133,10 +137,32 @@ en las pantallas sin tener que recargar el catálogo.
 El esquema se exporta en `app/schemas/` para preparar futuras migraciones;
 no se habilitó una recreación destructiva de la base.
 
-**Límite de esta etapa:** la lista de favoritos puede leerse sin Internet, pero
-abrir su detalle sigue consultando la API. RF-05 no está completo: faltan el detalle
-offline y el aviso global de conexión. Las imágenes remotas tampoco se garantizan
-sin Internet. El catálogo general todavía no tiene caché persistente.
+### Detalle sin conexión y conectividad
+
+`EventRepository.obtenerDetalleEvento` decide la fuente del detalle:
+
+- Sin conexión validada por Android, busca el favorito por id en Room, sin
+  solicitar el detalle al servidor.
+- Con conexión, prefiere la API. Ante un fallo de red o respuesta 5xx utiliza
+  el favorito guardado, si existe.
+- Un 404 se informa como evento no disponible; no se oculta con datos antiguos
+  ni elimina automáticamente el favorito.
+- Si no existe una copia, se muestra el error y la opción de reintentar.
+
+La pantalla identifica la copia local y sus cupos como datos guardados, no como
+disponibilidad actual. Al recuperar Internet se puede actualizar manualmente
+para consultar el detalle remoto y retirar esa marca.
+
+`ConectividadViewModel` alimenta un aviso compartido por todas las pantallas.
+El estado desconocido inicial no se presenta como desconexión. La observación
+usa `ACCESS_NETWORK_STATE`, un permiso normal sin diálogo; libera el callback
+cuando deja de observarse. Una red validada no garantiza que el servidor esté
+disponible, por eso también se manejan fallos de la solicitud.
+
+**Límites:** las imágenes remotas no se garantizan sin Internet. El catálogo
+general y los detalles completos de lugares todavía no tienen caché persistente.
+La copia de un favorito se reemplaza al volver a guardarlo, no se sincroniza
+automáticamente durante la consulta.
 
 ### Endpoints utilizados
 
@@ -212,10 +238,20 @@ pendientes de comprobar en dispositivo.
 - No se instaló esta versión ni se verificó visualmente el cierre forzado,
   el modo avión o el snackbar Deshacer. Esos escenarios siguen pendientes.
 
+### Verificación del detalle sin conexión (23 de noviembre de 2026)
+
+- Compilación debug, pruebas JVM, Lint y compilación del APK de pruebas completados.
+- **51 pruebas JVM aprobadas**, sin fallos.
+- Lint terminó sin errores bloqueantes; conserva 17 advertencias.
+- Se comprobaron selección de fuente, copia guardada, recuperación tras fallos,
+  404, cancelación y estado observable de conectividad mediante pruebas locales.
+- El modo avión, los callbacks reales de Android y la presentación visual siguen
+  pendientes de verificar en un dispositivo. No se instaló esta versión.
+
 ## Lo que sigue pendiente
 
 - Comprobar en dispositivo la persistencia de favoritos tras cierre forzado.
-- Detalle offline de favoritos y aviso global de conexión (RF-05 parcial).
+- Comprobar el aviso global y el detalle de favoritos en modo avión y tras recuperar Internet.
 - Caché Room, aviso de antigüedad y funcionamiento sin conexión tras reiniciar.
 - Registro, login, logout y sesión persistida en DataStore.
 - Inscripción/cancelación, manejo de 401/409 y mis inscripciones.

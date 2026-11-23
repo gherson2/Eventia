@@ -63,4 +63,27 @@ class DetallesViewModelTest {
         assertEquals(7, vm.uiState.value.lugares.single().id)
         assertNotNull(vm.uiState.value.error)
     }
+
+    @Test fun detalleGuardadoInformaSuOrigenSinMostrarUnErrorBloqueante() = runTest {
+        val repo = RepositorioPrueba()
+        repo.esCopiaGuardada = true
+        val vm = DetalleEventoViewModel(repo, SavedStateHandle(mapOf("eventoId" to 42)))
+        advanceUntilIdle()
+        assertEquals(42, vm.uiState.value.evento?.id)
+        assertTrue(vm.uiState.value.esCopiaGuardada)
+        assertNull(vm.uiState.value.error)
+        assertFalse(vm.uiState.value.cargando)
+    }
+
+    @Test fun actualizarConDatosRemotosRetiraLaMarcaDeCopiaGuardada() = runTest {
+        val repo = RepositorioPrueba()
+        repo.esCopiaGuardada = true
+        val vm = DetalleEventoViewModel(repo, SavedStateHandle(mapOf("eventoId" to 42)))
+        advanceUntilIdle()
+        repo.esCopiaGuardada = false
+        vm.cargar()
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.esCopiaGuardada)
+        assertNull(vm.uiState.value.error)
+    }
 }

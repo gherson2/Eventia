@@ -19,7 +19,8 @@ import retrofit2.HttpException
 data class DetalleEventoUiState(
     val evento: Event? = null,
     val cargando: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
+    val esCopiaGuardada: Boolean = false
 )
 
 @HiltViewModel
@@ -39,14 +40,19 @@ class DetalleEventoViewModel @Inject constructor(
         _uiState.update { it.copy(cargando = true, error = null) }
         consulta = viewModelScope.launch {
             try {
-                val evento = repositorio.obtenerEvento(id)
-                _uiState.value = DetalleEventoUiState(evento = evento, cargando = false)
+                val detalle = repositorio.obtenerDetalleEvento(id)
+                _uiState.value = DetalleEventoUiState(
+                    evento = detalle.evento,
+                    cargando = false,
+                    esCopiaGuardada = detalle.esCopiaGuardada
+                )
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 val noExiste = e is HttpException && e.code() == 404
                 _uiState.update {
                     it.copy(
                         evento = if (noExiste) null else it.evento,
+                        esCopiaGuardada = if (noExiste) false else it.esCopiaGuardada,
                         cargando = false,
                         error = if (noExiste) "Este evento ya no está disponible." else e.mensajeParaUsuario()
                     )

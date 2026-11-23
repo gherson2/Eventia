@@ -3,6 +3,9 @@ package com.example.moviles_eventia.repositories
 import com.example.moviles_eventia.api.EventiaApi
 import com.example.moviles_eventia.api.dto.EventDto
 import com.google.gson.Gson
+import com.example.moviles_eventia.ui.screens.RepositorioPrueba
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -17,6 +20,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 class EventRepositoryTest {
     private lateinit var servidor: MockWebServer
     private lateinit var repositorio: EventRepository
+    private lateinit var api: EventiaApi
+    private lateinit var favoritos: FavoritosPrueba
+    private lateinit var conectividad: ConectividadPrueba
     private val eventoJson = """
         {
           "id":42,"title":"Jazz en vivo","summary":"Música","description":"Descripción completa",
@@ -30,11 +36,13 @@ class EventRepositoryTest {
     @Before fun preparar() {
         servidor = MockWebServer()
         servidor.start()
-        val api = Retrofit.Builder()
+        api = Retrofit.Builder()
             .baseUrl(servidor.url("/api/"))
             .addConverterFactory(GsonConverterFactory.create())
             .build().create(EventiaApi::class.java)
-        repositorio = EventRepositoryImpl(api)
+        favoritos = FavoritosPrueba()
+        conectividad = ConectividadPrueba()
+        repositorio = EventRepositoryImpl(api, favoritos, conectividad)
     }
 
     @After fun terminar() { servidor.shutdown() }
@@ -115,5 +123,105 @@ class EventRepositoryTest {
             direccionImagen("http://localhost/storage/foto.jpg", "https://example.com/api/"))
         assertNull(direccionImagen("file:///private/photo.jpg"))
         assertNull(direccionImagen(null))
+    }
+
+    @Test fun sinConexionAbreElFavoritoSinConsultarLaApi() = runTest {
+        val guardado = RepositorioPrueba().evento
+        favoritos.guardar(guardado)
+        conectividad.conectado.value = false
+        val detalle = repositorio.obtenerDetalleEvento(guardado.id)
+        assertEquals(guardado, detalle.evento)
+        assertTrue(detalle.esCopiaGuardada)
+        assertEquals(0, servidor.requestCount)
+    }
+
+    @Test fun sinConexionNiFavoritoInformaErrorSinSolicitudes() = runTest {
+        conectividad.conectado.value = false
+        try {
+            repositorio.obtenerDetalleEvento(999)
+            fail("No debe inventar un detalle")
+        } catch (_: IOException) {
+            assertEquals(0, servidor.requestCount)
+        }
+    }
+
+    @Test fun conConexionPrefiereElDetalleRemotoYNoLoMarcaComoGuardado() = runTest {
+        favoritos.guardar(RepositorioPrueba().evento.copy(title = "Título antiguo"))
+        responder(eventoJson)
+        val detalle = repositorio.obtenerDetalleEvento(42)
+        assertFalse(detalle.esCopiaGuardada)
+        assertEquals("Jazz en vivo", detalle.evento.title)
+        assertEquals("/api/events/42", servidor.takeRequest().path)
+    }
+
+    @Test fun falloDeRedUsaCopiaAunqueAndroidIndiqueConexion() = runTest {
+        val guardado = RepositorioPrueba().evento
+        favoritos.guardar(guardado)
+        val apiFallida = object : EventiaApi by api {
+            override suspend fun obtenerEvento(id: Int): EventDto = throw IOException("Sin respuesta")
+        }
+        val repo = EventRepositoryImpl(apiFallida, favoritos, conectividad)
+        val detalle = repo.obtenerDetalleEvento(guardado.id)
+        assertEquals(guardado, detalle.evento)
+        assertTrue(detalle.esCopiaGuardada)
+    }
+
+    @Test fun errorDelServidorPermiteConsultarLaCopiaGuardada() = runTest {
+        favoritos.guardar(RepositorioPrueba().evento)
+        servidor.enqueue(MockResponse().setResponseCode(503))
+        assertTrue(repositorio.obtenerDetalleEvento(42).esCopiaGuardada)
+    }
+
+    @Test fun un404NoSeOcultaConElFavoritoAntiguo() = runTest {
+        favoritos.guardar(RepositorioPrueba().evento)
+        servidor.enqueue(MockResponse().setResponseCode(404))
+        try {
+            repositorio.obtenerDetalleEvento(42)
+            fail("Debe informar que el evento no existe")
+        } catch (e: HttpException) {
+            assertEquals(404, e.code())
+            assertNotNull(favoritos.obtenerFavorito(42))
+        }
+    }
+
+    @Test fun cancelarNoDevuelveUnaCopiaComoSiLaConsultaHubieraTerminado() = runTest {
+        favoritos.guardar(RepositorioPrueba().evento)
+        val apiCancelada = object : EventiaApi by api {
+            override suspend fun obtenerEvento(id: Int): EventDto = throw CancellationException("Cancelado")
+        }
+        val repo = EventRepositoryImpl(apiCancelada, favoritos, conectividad)
+        try {
+            repo.obtenerDetalleEvento(42)
+            fail("Debe propagar la cancelación")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelado", e.message)
+        }
+    }
+
+    @Test fun falloDeRedSinFavoritoConservaElErrorOriginal() = runTest {
+        val fallo = IOException("Servidor inaccesible")
+        val apiFallida = object : EventiaApi by api {
+            override suspend fun obtenerEvento(id: Int): EventDto = throw fallo
+        }
+        val repo = EventRepositoryImpl(apiFallida, favoritos, conectividad)
+        try {
+            repo.obtenerDetalleEvento(42)
+            fail("No existe copia para recuperar")
+        } catch (e: IOException) {
+            assertSame(fallo, e)
+        }
+    }
+
+    @Test fun quitarFavoritoTambienRetiraSuDetalleLocal() = runTest {
+        val guardado = RepositorioPrueba().evento
+        favoritos.guardar(guardado)
+        favoritos.quitar(guardado.id)
+        conectividad.conectado.value = false
+        try {
+            repositorio.obtenerDetalleEvento(guardado.id)
+            fail("La copia se quitó")
+        } catch (_: IOException) {
+            assertEquals(0, servidor.requestCount)
+        }
     }
 }

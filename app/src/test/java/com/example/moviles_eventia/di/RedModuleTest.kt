@@ -2,6 +2,8 @@ package com.example.moviles_eventia.di
 
 import com.example.moviles_eventia.BuildConfig
 import com.example.moviles_eventia.repositories.EventRepositoryImpl
+import com.example.moviles_eventia.repositories.FavoritosPrueba
+import com.example.moviles_eventia.repositories.ConectividadPrueba
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -30,7 +32,7 @@ class RedModuleTest {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
             val api = RedModule.proporcionarEventiaApi(retrofit)
-            val repositorio = EventRepositoryImpl(api)
+            val repositorio = EventRepositoryImpl(api, FavoritosPrueba(), ConectividadPrueba())
 
             assertEquals("Música", repositorio.obtenerCategorias().single().name)
             assertEquals("/api/categories", servidor.takeRequest().path)

@@ -39,6 +39,17 @@ fun DetalleEventoScreen(
             ) {
                 if (estado.cargando) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 estado.error?.let { item { Aviso(it, alActualizar) } }
+                if (estado.esCopiaGuardada) item {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(
+                            "Copia guardada en este dispositivo. Los datos y cupos pueden haber cambiado.",
+                            Modifier.fillMaxWidth().padding(12.dp)
+                        )
+                    }
+                }
                 item { ImagenEvento(evento.imageUrl, evento.title, Modifier.fillMaxWidth().height(210.dp)) }
                 item {
                     OutlinedButton(
@@ -66,10 +77,13 @@ fun DetalleEventoScreen(
                     Text(evento.venue.address.orEmpty().ifBlank { "Dirección no disponible" })
                 }
                 item {
-                    Text("Cupos disponibles: ${evento.availableSpots?.toString() ?: "No informados"}")
+                    val etiqueta = if (estado.esCopiaGuardada) "Cupos guardados" else "Cupos disponibles"
+                    Text("$etiqueta: ${evento.availableSpots?.toString() ?: "No informados"}")
                     Text("Capacidad: ${evento.capacity?.toString() ?: "No informada"}")
                     if (evento.availableSpots == 0) Text(
-                        "Sin cupos disponibles", color = MaterialTheme.colorScheme.error
+                        if (estado.esCopiaGuardada) "La copia guardada indicaba que no había cupos."
+                            else "Sin cupos disponibles",
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
                 item {

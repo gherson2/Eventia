@@ -31,9 +31,13 @@ Las verificaciones automáticas de repositorio/ViewModel no certifican la interf
 | Guardar el mismo evento otra vez | No duplicar la fila | Prueba JVM; Room real pendiente |
 | Quitar en Favoritos y tocar Deshacer | Recuperar el mismo evento | Prueba JVM; snackbar real pendiente |
 | Cerrar forzadamente y reabrir | Mantener favoritos guardados en Room | Prueba instrumentada añadida; ejecución pendiente |
-| Listar favoritos en modo avión | Mostrar las copias locales y permitir quitarlas | Pendiente; no incluye abrir detalle offline |
+| Listar favoritos en modo avión | Mostrar las copias locales y permitir quitarlas | Pendiente en dispositivo |
 | Reabrir una base Room de prueba | Mantener favorito y poder eliminarlo | FavoritosPersistenciaTest añadido; ejecución pendiente |
-| Abrir detalle de favorito sin red | Mostrar detalle local | No implementado en esta etapa |
+| Abrir detalle de favorito sin red | Mostrar detalle local y advertencia de copia guardada | Cubierto en JVM; modo avión pendiente |
+| Abrir evento no guardado sin red | Error comprensible sin inventar datos | Cubierto en JVM; UI pendiente |
+| Recuperar conexión y actualizar el detalle | Consultar la API y retirar la marca de copia guardada | Cubierto en JVM; UI pendiente |
+| Perder o recuperar conexión | Mostrar o retirar el aviso global | Estado observable cubierto en JVM; callbacks Android pendientes |
+| Servidor 404 con favorito guardado | Informar evento no disponible, sin borrar el favorito | Cubierto en JVM; UI pendiente |
 
 ## Verificación HTTP de referencia
 

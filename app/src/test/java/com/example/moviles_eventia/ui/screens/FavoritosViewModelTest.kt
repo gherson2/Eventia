@@ -27,6 +27,7 @@ class FavoritosViewModelTest {
             errorLectura?.let { throw it }
             emitAll(datos)
         }.onStart { observadores++ }.onCompletion { observadores-- }
+        override suspend fun obtenerFavorito(id: Int) = datos.value.find { it.id == id }
         override suspend fun guardar(evento: Event) {
             errorEscritura?.let { throw it }
             datos.update { it.filterNot { anterior -> anterior.id == evento.id } + evento }

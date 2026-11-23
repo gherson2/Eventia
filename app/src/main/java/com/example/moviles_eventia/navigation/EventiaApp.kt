@@ -4,6 +4,7 @@ package com.example.moviles_eventia.navigation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -14,6 +15,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -40,6 +42,7 @@ import com.example.moviles_eventia.ui.screens.DetalleLugarScreen
 import com.example.moviles_eventia.ui.screens.FavoritosViewModel
 import com.example.moviles_eventia.ui.screens.FavoritosScreen
 import com.example.moviles_eventia.models.Event
+import com.example.moviles_eventia.ui.screens.ConectividadViewModel
 
 private enum class Pantalla(
     val ruta: String,
@@ -59,6 +62,8 @@ fun EventiaApp() {
     // Un único observador de Room comparte el estado entre todos los destinos.
     val favoritosVm: FavoritosViewModel = hiltViewModel()
     val favoritos by favoritosVm.uiState.collectAsStateWithLifecycle()
+    val conectividadVm: ConectividadViewModel = hiltViewModel()
+    val conectado by conectividadVm.conectado.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val cambiarFavorito: (Event) -> Unit = { evento ->
         favoritosVm.cambiarFavorito(evento, guardar = favoritos.eventos.none { it.id == evento.id })
@@ -115,88 +120,96 @@ fun EventiaApp() {
         }
     ) { innerPadding ->
 
-        NavHost(
-            navController = navController,
-            startDestination = Pantalla.EXPLORAR.ruta,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-
-            // PANTALLA EXPLORAR
-            composable(Pantalla.EXPLORAR.ruta) {
-
-                val viewModel: ExplorarViewModel = hiltViewModel()
-                val lugaresViewModel: LugaresViewModel = hiltViewModel()
-
-                val estado by viewModel.uiState.collectAsStateWithLifecycle()
-                val lugares by lugaresViewModel.uiState.collectAsStateWithLifecycle()
-
-                ExplorarScreen(
-                    estado = estado,
-                    lugares = lugares,
-                    favoritos = favoritos,
-                    alCambiarFavorito = cambiarFavorito,
-                    alBuscar = viewModel::cambiarBusqueda,
-                    alFiltrar = viewModel::cambiarCategoria,
-                    alLimpiar = viewModel::limpiarFiltros,
-                    alActualizar = viewModel::obtenerEventos,
-                    alCargarCategorias = viewModel::obtenerCategorias,
-                    alActualizarLugares = lugaresViewModel::cargar,
-                    alEvento = { navController.navigate("evento/$it") },
-                    alLugar = { navController.navigate("lugar/$it") }
-                )
+        Column(Modifier.fillMaxSize().padding(innerPadding)) {
+            if (conectado == false) {
+                Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Text(
+                        "Sin conexión. Puedes consultar tus favoritos guardados.",
+                        Modifier.fillMaxWidth().padding(12.dp),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
-
-            composable(
-                route = "evento/{eventoId}",
-                arguments = listOf(navArgument("eventoId") { type = NavType.IntType })
+            NavHost(
+                navController = navController,
+                startDestination = Pantalla.EXPLORAR.ruta,
+                modifier = Modifier.weight(1f)
             ) {
-                val vm: DetalleEventoViewModel = hiltViewModel()
-                val estado by vm.uiState.collectAsStateWithLifecycle()
-                DetalleEventoScreen(
-                    estado = estado,
-                    esFavorito = favoritos.eventos.any { it.id == estado.evento?.id },
-                    favoritoHabilitado = !favoritos.cargando && !favoritos.guardando && favoritos.error == null,
-                    alCambiarFavorito = cambiarFavorito,
-                    alVolver = { navController.popBackStack() },
-                    alActualizar = vm::cargar,
-                    alLugar = { navController.navigate("lugar/$it") }
-                )
-            }
+                // PANTALLA EXPLORAR
+                composable(Pantalla.EXPLORAR.ruta) {
+                    val viewModel: ExplorarViewModel = hiltViewModel()
+                    val lugaresViewModel: LugaresViewModel = hiltViewModel()
+                    val estado by viewModel.uiState.collectAsStateWithLifecycle()
+                    val lugares by lugaresViewModel.uiState.collectAsStateWithLifecycle()
 
-            composable(
-                route = "lugar/{lugarId}",
-                arguments = listOf(navArgument("lugarId") { type = NavType.IntType })
-            ) {
-                val vm: DetalleLugarViewModel = hiltViewModel()
-                val estado by vm.uiState.collectAsStateWithLifecycle()
-                DetalleLugarScreen(
-                    estado = estado,
-                    favoritos = favoritos,
-                    alCambiarFavorito = cambiarFavorito,
-                    alVolver = { navController.popBackStack() },
-                    alActualizar = vm::cargar,
-                    alEvento = { navController.navigate("evento/$it") }
-                )
-            }
+                    ExplorarScreen(
+                        estado = estado,
+                        lugares = lugares,
+                        favoritos = favoritos,
+                        alCambiarFavorito = cambiarFavorito,
+                        alBuscar = viewModel::cambiarBusqueda,
+                        alFiltrar = viewModel::cambiarCategoria,
+                        alLimpiar = viewModel::limpiarFiltros,
+                        alActualizar = viewModel::obtenerEventos,
+                        alCargarCategorias = viewModel::obtenerCategorias,
+                        alActualizarLugares = lugaresViewModel::cargar,
+                        alEvento = { navController.navigate("evento/$it") },
+                        alLugar = { navController.navigate("lugar/$it") }
+                    )
+                }
 
-            // PANTALLA MAPA
-            composable(Pantalla.MAPA.ruta) {
-                PantallaTemporal("Mapa")
-            }
+                composable(
+                    route = "evento/{eventoId}",
+                    arguments = listOf(navArgument("eventoId") { type = NavType.IntType })
+                ) {
+                    val vm: DetalleEventoViewModel = hiltViewModel()
+                    val estado by vm.uiState.collectAsStateWithLifecycle()
+                    DetalleEventoScreen(
+                        estado = estado,
+                        esFavorito = favoritos.eventos.any { it.id == estado.evento?.id },
+                        favoritoHabilitado = !favoritos.cargando && !favoritos.guardando && favoritos.error == null,
+                        alCambiarFavorito = cambiarFavorito,
+                        alVolver = { navController.popBackStack() },
+                        alActualizar = vm::cargar,
+                        alLugar = { navController.navigate("lugar/$it") }
+                    )
+                }
 
-            // PANTALLA FAVORITOS
-            composable(Pantalla.FAVORITOS.ruta) {
-                FavoritosScreen(
-                    estado = favoritos,
-                    alReintentar = favoritosVm::cargar,
-                    alEvento = { navController.navigate("evento/$it") },
-                    alQuitar = { favoritosVm.cambiarFavorito(it, guardar = false) }
-                )
-            }
+                composable(
+                    route = "lugar/{lugarId}",
+                    arguments = listOf(navArgument("lugarId") { type = NavType.IntType })
+                ) {
+                    val vm: DetalleLugarViewModel = hiltViewModel()
+                    val estado by vm.uiState.collectAsStateWithLifecycle()
+                    DetalleLugarScreen(
+                        estado = estado,
+                        favoritos = favoritos,
+                        alCambiarFavorito = cambiarFavorito,
+                        alVolver = { navController.popBackStack() },
+                        alActualizar = vm::cargar,
+                        alEvento = { navController.navigate("evento/$it") }
+                    )
+                }
 
-            // PANTALLA PERFIL
-            composable(Pantalla.PERFIL.ruta) {
-                PantallaTemporal("Perfil")
+                // PANTALLA MAPA
+                composable(Pantalla.MAPA.ruta) {
+                    PantallaTemporal("Mapa")
+                }
+
+                // PANTALLA FAVORITOS
+                composable(Pantalla.FAVORITOS.ruta) {
+                    FavoritosScreen(
+                        estado = favoritos,
+                        alReintentar = favoritosVm::cargar,
+                        alEvento = { navController.navigate("evento/$it") },
+                        alQuitar = { favoritosVm.cambiarFavorito(it, guardar = false) }
+                    )
+                }
+
+                // PANTALLA PERFIL
+                composable(Pantalla.PERFIL.ruta) {
+                    PantallaTemporal("Perfil")
+                }
             }
         }
     }

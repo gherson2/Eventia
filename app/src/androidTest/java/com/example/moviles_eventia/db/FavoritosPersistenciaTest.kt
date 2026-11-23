@@ -36,6 +36,8 @@ class FavoritosPersistenciaTest {
             db = segunda
             val reabierto = FavoritosRepositoryImpl(segunda.favoritosDao(), Gson())
             assertEquals(evento, reabierto.observarFavoritos().first().single())
+            assertEquals(evento, reabierto.obtenerFavorito(evento.id))
+            assertNull(reabierto.obtenerFavorito(999))
             reabierto.quitar(evento.id)
             assertTrue(reabierto.observarFavoritos().first().isEmpty())
         } finally {

@@ -12,6 +12,9 @@ interface FavoritosDao {
     @Query("SELECT * FROM favoritos ORDER BY id")
     fun observarFavoritos(): Flow<List<FavoritoEntity>>
 
+    @Query("SELECT * FROM favoritos WHERE id = :id")
+    suspend fun obtenerPorId(id: Int): FavoritoEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun guardar(favorito: FavoritoEntity)
 

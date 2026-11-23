@@ -4,6 +4,7 @@ import com.example.moviles_eventia.models.Category
 import com.example.moviles_eventia.models.Event
 import com.example.moviles_eventia.models.Venue
 import com.example.moviles_eventia.models.filtrarEventos
+import com.example.moviles_eventia.models.DetalleEvento
 import com.example.moviles_eventia.repositories.EventRepository
 
 class RepositorioPrueba : EventRepository {
@@ -12,6 +13,7 @@ class RepositorioPrueba : EventRepository {
         Category(3, "Música"), null, lugar, 50, 10, "Descripción completa")
     var error: Exception? = null
     var errorEventosLugar: Exception? = null
+    var esCopiaGuardada = false
     val consultas = mutableListOf<Pair<String, Int?>>()
 
     override suspend fun obtenerEventos(busqueda: String, categoriaId: Int?): List<Event> {
@@ -24,6 +26,8 @@ class RepositorioPrueba : EventRepository {
         error?.let { throw it }
         return evento
     }
+    override suspend fun obtenerDetalleEvento(id: Int) =
+        DetalleEvento(obtenerEvento(id), esCopiaGuardada)
     override suspend fun obtenerLugares(): List<Venue> {
         error?.let { throw it }
         return listOf(lugar)

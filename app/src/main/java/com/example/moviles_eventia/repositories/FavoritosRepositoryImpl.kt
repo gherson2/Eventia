@@ -22,6 +22,10 @@ class FavoritosRepositoryImpl @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
+    override suspend fun obtenerFavorito(id: Int): Event? = withContext(Dispatchers.IO) {
+        dao.obtenerPorId(id)?.let { gson.fromJson(it.json, Event::class.java) }
+    }
+
     override suspend fun guardar(evento: Event) = withContext(Dispatchers.IO) {
         dao.guardar(FavoritoEntity(evento.id, gson.toJson(evento)))
     }
