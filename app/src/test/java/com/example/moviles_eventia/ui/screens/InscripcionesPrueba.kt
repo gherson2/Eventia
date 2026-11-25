@@ -8,6 +8,17 @@ class InscripcionesPrueba(var respuesta: Event = RepositorioPrueba().evento.copy
     val llamadas = mutableListOf<Pair<Int, Boolean>>()
     var error: Exception? = null
     var alCambiar: (suspend (Int, Boolean) -> Event)? = null
+    var consultas = 0
+    val usuariosConsultados = mutableListOf<Int>()
+    var lista: List<Event> = emptyList()
+    var errorConsulta: Exception? = null
+    var alConsultar: (suspend () -> List<Event>)? = null
+    override suspend fun obtenerMisInscripciones(usuarioId: Int): List<Event> {
+        consultas++
+        usuariosConsultados += usuarioId
+        errorConsulta?.let { throw it }
+        return alConsultar?.invoke() ?: lista
+    }
     override suspend fun cambiarInscripcion(id: Int, inscribir: Boolean): Event {
         llamadas += id to inscribir
         error?.let { throw it }

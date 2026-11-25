@@ -141,4 +141,71 @@ class InscripcionRepositoryTest {
     @Test fun tagDeSesionNoExponeElTokenEnSuRepresentacion() {
         assertFalse(SesionEsperada("privado").toString().contains("privado"))
     }
+
+    @Test fun listaPersonalUsaBearerYConservaEventosPasados() = runTest {
+        val pasado = evento.copy(id = 43, startsAt = "2020-01-01T12:00:00Z")
+        servidor.enqueue(MockResponse().setBody(Gson().toJson(listOf(evento, pasado, evento))))
+        val lista = repo.obtenerMisInscripciones(7)
+        val solicitud = servidor.takeRequest()
+        assertEquals("GET", solicitud.method)
+        assertEquals("/api/me/attendances", solicitud.path)
+        assertEquals("Bearer token-prueba", solicitud.getHeader("Authorization"))
+        assertEquals(listOf(42, 43), lista.map { it.id })
+        assertTrue(lista.all { it.isAttending })
+    }
+
+    @Test fun listaPersonalSinSesionNoConsultaLaApi() = runTest {
+        almacen.cerrar()
+        try { repo.obtenerMisInscripciones(7); fail("Se necesita sesión") }
+        catch (_: SesionRequeridaException) { }
+        assertEquals(0, servidor.requestCount)
+    }
+
+    @Test fun listaPersonalSinRedNoSePresentaComoVacia() = runTest {
+        conectividad.conectado.value = false
+        try { repo.obtenerMisInscripciones(7); fail("Se necesita conexión") }
+        catch (_: IOException) { }
+        assertEquals(0, servidor.requestCount)
+    }
+
+    @Test fun un401EnLaListaPersonalExpiraLaSesion() = runTest {
+        servidor.enqueue(MockResponse().setResponseCode(401))
+        try { repo.obtenerMisInscripciones(7); fail("Se esperaba 401") }
+        catch (e: HttpException) { assertEquals(401, e.code()) }
+        assertNull(almacen.sesion.value)
+        assertEquals(1, almacen.expiraciones)
+    }
+
+    @Test fun listaTardiaSeDescartaAlCambiarDeCuenta() = runTest {
+        servidor.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                runBlocking { almacen.guardar(Sesion("nuevo", usuario.copy(id = 8))) }
+                return MockResponse().setBody(Gson().toJson(listOf(evento)))
+            }
+        }
+        try { repo.obtenerMisInscripciones(7); fail("No debe devolver datos de otra cuenta") }
+        catch (_: CancellationException) { }
+        assertEquals("nuevo", almacen.sesion.value?.token)
+    }
+
+    @Test fun cambiarCuentaAntesDeConsultarNoEnviaUnaPeticionConOtraSesion() = runTest {
+        var lecturas = 0
+        val cambiante = object : SesionStore by almacen {
+            override val sesion = flow {
+                lecturas++
+                if (lecturas == 2) almacen.guardar(Sesion("nuevo", usuario.copy(id = 8)))
+                emit(almacen.sesion.value)
+            }
+        }
+        val cuenta = InscripcionRepositoryImpl(crearApi(cambiante), cambiante, conectividad)
+        try { cuenta.obtenerMisInscripciones(7); fail("La sesión cambió") }
+        catch (_: IOException) { }
+        assertEquals(0, servidor.requestCount)
+    }
+
+    @Test fun noConsultaDatosSiElPerfilEsperabaOtraCuenta() = runTest {
+        try { repo.obtenerMisInscripciones(8); fail("El perfil no corresponde a la sesión") }
+        catch (_: CancellationException) { }
+        assertEquals(0, servidor.requestCount)
+    }
 }

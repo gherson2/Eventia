@@ -10,6 +10,7 @@ import com.example.moviles_eventia.ui.screens.AccesoScreen
 import com.example.moviles_eventia.ui.screens.AccesoUiState
 import com.example.moviles_eventia.ui.screens.CuentaUiState
 import com.example.moviles_eventia.ui.screens.PerfilScreen
+import com.example.moviles_eventia.ui.screens.MisInscripcionesUiState
 import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -41,8 +42,9 @@ class CuentaPantallasTest {
             MaterialTheme {
                 PerfilScreen(
                     estado = CuentaUiState(leyendoSesion = false),
+                    inscripciones = MisInscripcionesUiState(),
                     alIngresar = {}, alRegistrar = { registrar.set(true) },
-                    alActualizar = {}, alCerrar = {}
+                    alActualizar = {}, alCerrar = {}, alEvento = {}
                 )
             }
         }

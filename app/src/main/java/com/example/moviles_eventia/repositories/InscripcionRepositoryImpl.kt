@@ -14,6 +14,18 @@ class InscripcionRepositoryImpl @Inject constructor(
     private val almacen: SesionStore,
     private val conectividad: ConectividadRepository
 ) : InscripcionRepository {
+    override suspend fun obtenerMisInscripciones(usuarioId: Int): List<Event> {
+        val sesion = almacen.sesion.first() ?: throw SesionRequeridaException()
+        if (sesion.usuario.id != usuarioId) throw CancellationException("La cuenta cambió antes de consultar")
+        if (!conectividad.tieneConexion()) throw IOException("Consulta tus inscripciones con conexión.")
+        val respuesta = api.obtenerMisInscripciones(SesionEsperada(sesion.token))
+        if (almacen.sesion.first()?.token != sesion.token) {
+            throw CancellationException("La sesión cambió durante la consulta")
+        }
+        // Son datos de esa cuenta: solo en memoria, nunca en la caché pública.
+        return respuesta.map { it.toEvent().copy(isAttending = true) }.distinctBy { it.id }
+    }
+
     override suspend fun cambiarInscripcion(id: Int, inscribir: Boolean): Event {
         val sesion = almacen.sesion.first() ?: throw SesionRequeridaException()
         if (!conectividad.tieneConexion()) throw IOException("La inscripción requiere conexión.")

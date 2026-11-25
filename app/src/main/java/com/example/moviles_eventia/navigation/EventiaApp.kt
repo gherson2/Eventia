@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -47,6 +48,7 @@ import com.example.moviles_eventia.ui.screens.CuentaViewModel
 import com.example.moviles_eventia.ui.screens.PerfilScreen
 import com.example.moviles_eventia.ui.screens.AccesoViewModel
 import com.example.moviles_eventia.ui.screens.AccesoScreen
+import com.example.moviles_eventia.ui.screens.MisInscripcionesViewModel
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 
@@ -232,12 +234,20 @@ fun EventiaApp() {
 
                 // PANTALLA PERFIL
                 composable(Pantalla.PERFIL.ruta) {
+                    val misVm: MisInscripcionesViewModel = hiltViewModel()
+                    val misInscripciones by misVm.uiState.collectAsStateWithLifecycle()
+                    LifecycleResumeEffect(misVm) {
+                        misVm.reanudar()
+                        onPauseOrDispose { misVm.pausar() }
+                    }
                     PerfilScreen(
                         estado = cuenta,
+                        inscripciones = misInscripciones,
                         alIngresar = { navController.navigate("acceso") },
                         alRegistrar = { navController.navigate("acceso?registro=true") },
-                        alActualizar = cuentaVm::actualizar,
-                        alCerrar = cuentaVm::cerrarSesion
+                        alActualizar = { cuentaVm.actualizar(); misVm.cargar() },
+                        alCerrar = cuentaVm::cerrarSesion,
+                        alEvento = { navController.navigate("evento/$it") }
                     )
                 }
 

@@ -39,6 +39,8 @@ No representa la entrega completa ni una calificación.
   cuenta y redirección a acceso cuando una sesión autenticada recibe 401.
 - Inscripción y cancelación desde el detalle, con cupos actualizados y manejo de
   conflictos de disponibilidad.
+- “Mis inscripciones” en Perfil, con próximas y pasadas, acceso al detalle y
+  actualización al regresar de una inscripción o cancelación.
 
 ## Configuración
 
@@ -214,6 +216,7 @@ GET /venues/{id}/events
 POST /auth/register
 POST /auth/login
 GET /me
+GET /me/attendances
 POST /events/{id}/attendance
 DELETE /events/{id}/attendance
 ```
@@ -280,8 +283,32 @@ Los favoritos y el catálogo no conservan `isAttending` como información válid
 de sesión: se limpia al guardar/leer copias y solo se confía en datos remotos
 recientes de la cuenta actual. Este cambio JSON no modifica el esquema de Room.
 
-**Alcance pendiente:** la lista “mis inscripciones” en Perfil, separada en próximas
-y pasadas, todavía no está implementada; RF-12 aún no está completo.
+### Mis inscripciones en Perfil
+
+`InscripcionRepository.obtenerMisInscripciones` consulta `GET /me/attendances`
+con autorización Bearer y la sesión esperada. No consulta la API sin cuenta ni
+utiliza la caché pública para almacenar estas filas personales.
+
+`MisInscripcionesViewModel` mantiene un estado independiente del perfil de
+usuario. Las inscripciones se agrupan por el instante ISO-8601 del evento:
+próximas en orden ascendente y pasadas en orden descendente. Los registros sin
+fecha válida se muestran en una sección explícita, sin confundirse con pasados.
+Las tarjetas reutilizan el componente del catálogo y abren el detalle del evento.
+
+Al entrar o regresar al Perfil se vuelve a consultar la lista, por lo que una
+cancelación desde el detalle deja de aparecer después de regresar. Al abandonar
+la pantalla se cancela la consulta pendiente. La actualización manual también
+está disponible.
+
+Un fallo inicial se muestra como error, no como una lista vacía exitosa. Si ya
+había datos de la misma cuenta, una actualización fallida los conserva con un
+aviso y reintento. Al cerrar sesión o cambiar de usuario se limpian las filas;
+una respuesta tardía no puede colocarse bajo otra cuenta. La UI comprueba también
+que la lista corresponda al usuario mostrado.
+
+**Límite:** estas inscripciones solo viven en memoria y se vuelven a consultar
+por red. No se garantiza una lista personal offline después de reiniciar la app.
+Los flujos completos de RF-12 aún deben verificarse en dispositivo con la API.
 
 ## Compilar y probar
 
@@ -313,6 +340,9 @@ Las pruebas de inscripciones también usan MockWebServer y estados ficticios;
 no se inscriben ni cancelan usuarios en el servidor público.
 `InscripcionPantallaTest` comprueba botones con composables aislados y requiere
 ejecución instrumentada para certificar la interfaz.
+`MisInscripcionesPantallaTest` contiene casos de pestañas, apertura del detalle,
+errores y protección ante listas de otra cuenta. Usa estados ficticios, no la
+cuenta del dispositivo; compilarlo no equivale a ejecutarlo.
 
 Las nuevas pruebas de favoritos verifican copia completa, actualización sin
 duplicados, eliminación, Deshacer, errores y observación del estado.
@@ -406,6 +436,16 @@ pendientes de comprobar en dispositivo.
 - No se realizaron inscripciones en el backend público ni se instaló esta versión
   en el teléfono. Las pruebas instrumentadas se compilaron, pero no se ejecutaron.
 
+### Verificación de Mis inscripciones
+
+- Compilación debug, pruebas JVM, Lint y compilación del APK de pruebas completados.
+- **137 pruebas JVM aprobadas**, sin fallos.
+- Se verificaron la ruta autenticada, próximas/pasadas, zonas horarias, fechas
+  inválidas, actualización al reanudar, errores y limpieza al cambiar de cuenta.
+- Lint terminó sin errores bloqueantes; conserva 26 advertencias.
+- Las pruebas de pestañas y navegación de tarjetas se compilaron, pero no se
+  ejecutaron en teléfono. No se consultaron ni modificaron cuentas reales.
+
 ## Lo que sigue pendiente
 
 - Comprobar en dispositivo la persistencia de favoritos tras cierre forzado.
@@ -414,7 +454,8 @@ pendientes de comprobar en dispositivo.
   y la actualización manual al recuperar conexión.
 - Verificar registro, login, logout, rotación y restauración de sesión en dispositivo.
 - Verificar en dispositivo inscripción, cancelación, 409, regreso del login y actualización de cupos.
-- Lista “mis inscripciones” en Perfil, separada en próximas y pasadas.
+- Comprobar en dispositivo las pestañas de inscripciones, el regreso del detalle
+  tras cancelar y la limpieza de las listas al cambiar de cuenta.
 - Mapa con marcadores, resumen y filtro de categoría.
 - Validación completa de accesibilidad, tamaños de pantalla y rotación.
 - Video final, documentación completa de la entrega y etiqueta `v1.0` cuando corresponda.

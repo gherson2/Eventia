@@ -43,6 +43,9 @@ interface EventiaApi {
     @DELETE("events/{id}/attendance")
     suspend fun cancelarInscripcion(@Path("id") id: Int, @Tag sesion: SesionEsperada): EventDto
 
+    @GET("me/attendances")
+    suspend fun obtenerMisInscripciones(@Tag sesion: SesionEsperada): List<EventDto>
+
     @GET("venues")
     suspend fun obtenerLugares(): List<VenueDto>
 

@@ -63,7 +63,13 @@ Las verificaciones automáticas de repositorio/ViewModel no certifican la interf
 | Caída de red durante la inscripción | Mantener detalle y actualizar antes de volver a operar | Prueba JVM; modo avión pendiente |
 | Cambiar de cuenta durante la solicitud | Descartar la respuesta anterior y no inscribir otra cuenta | Prueba JVM; UI pendiente |
 | Favorito guardado por otra cuenta | No recuperar su estado personal de inscripción | Prueba JVM |
-| Ver mis inscripciones en Perfil | Listas próximas/pasadas | No implementado en esta etapa |
+| Ver mis inscripciones en Perfil | Próximas ascendentes y pasadas descendentes | Repositorio, agrupación y ViewModel en JVM; UI pendiente |
+| Abrir una inscripción desde Perfil | Detalle del evento y regreso conservando navegación | Prueba instrumentada añadida; ejecución pendiente |
+| Volver al Perfil tras cancelar | Refrescar y retirar el evento cancelado | Ciclo de reanudación cubierto en JVM; navegación real pendiente |
+| Error en primera carga de inscripciones | Error y reintento, sin mensaje de lista vacía exitosa | Prueba JVM; UI pendiente |
+| Error al actualizar mis inscripciones | Conservar solo la lista de la misma cuenta | Prueba JVM; modo avión pendiente |
+| Cambiar de cuenta o cerrar sesión en Perfil | Limpiar filas y descartar respuestas antiguas | Prueba JVM; UI pendiente |
+| Inscripción con fecha inválida | Sección Fecha no disponible, sin cierre | Agrupación probada en JVM; UI pendiente |
 
 ## Verificación HTTP de referencia
 

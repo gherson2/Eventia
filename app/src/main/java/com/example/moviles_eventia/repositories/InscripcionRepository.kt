@@ -6,4 +6,5 @@ class SesionRequeridaException : Exception("Inicia sesión para gestionar tu ins
 
 interface InscripcionRepository {
     suspend fun cambiarInscripcion(id: Int, inscribir: Boolean): Event
+    suspend fun obtenerMisInscripciones(usuarioId: Int): List<Event>
 }
