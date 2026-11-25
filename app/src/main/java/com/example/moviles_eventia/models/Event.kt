@@ -18,7 +18,8 @@ data class Event(
     val capacity: Int?,
     val availableSpots: Int?,
     val description: String = "",
-    val endsAt: String? = null
+    val endsAt: String? = null,
+    val isAttending: Boolean = false
 ) {
     fun instante(): Instant? = runCatching { OffsetDateTime.parse(startsAt).toInstant() }.getOrNull()
     fun esProximo(ahora: Instant = Instant.now()): Boolean =

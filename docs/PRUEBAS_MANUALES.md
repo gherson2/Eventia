@@ -54,6 +54,16 @@ Las verificaciones automáticas de repositorio/ViewModel no certifican la interf
 | Sesión expirada en solicitud autenticada | Borrar sesión y llevar al acceso sin cerrar la app | Interceptor probado; navegación real pendiente |
 | Respuesta 401 de una sesión anterior | No borrar una sesión nueva | Prueba JVM |
 | Abrir sin cuenta | Mantener catálogo, lugares y favoritos disponibles | UI pendiente |
+| Inscribirse desde detalle con sesión | Confirmar inscripción y actualizar cupos con la respuesta | MockWebServer y ViewModel; UI pendiente |
+| Cancelar inscripción | Cambiar botón y mostrar cupos devueltos por el servidor | Prueba JVM; UI pendiente |
+| Inscribirse sin sesión | Abrir acceso, regresar al evento y pedir confirmación | ViewModel probado; navegación real pendiente |
+| Evento sin cupos | Bloquear una inscripción nueva, sin impedir cancelar una existente | Prueba JVM; UI pendiente |
+| Conflicto 409 | Avisar y refrescar el detalle | Prueba JVM; UI pendiente |
+| Doble pulsación | Enviar una sola operación mientras se procesa | Prueba JVM; UI pendiente |
+| Caída de red durante la inscripción | Mantener detalle y actualizar antes de volver a operar | Prueba JVM; modo avión pendiente |
+| Cambiar de cuenta durante la solicitud | Descartar la respuesta anterior y no inscribir otra cuenta | Prueba JVM; UI pendiente |
+| Favorito guardado por otra cuenta | No recuperar su estado personal de inscripción | Prueba JVM |
+| Ver mis inscripciones en Perfil | Listas próximas/pasadas | No implementado en esta etapa |
 
 ## Verificación HTTP de referencia
 

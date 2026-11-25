@@ -17,6 +17,10 @@ class AutorizacionInterceptor @Inject constructor(
             .containsMatchIn(original.url.encodedPath)
         // Retrofit usa OkHttp asíncrono: este código corre en su hilo de red, no en UI.
         val token = if (admiteToken) runBlocking { almacen.sesion.first()?.token } else null
+        val esperada = original.tag(SesionEsperada::class.java)
+        if (esperada != null && esperada.token != token) {
+            throw IOException("La sesión cambió antes de enviar la solicitud.")
+        }
         val solicitud = original.newBuilder().header("Accept", "application/json")
             .removeHeader("Authorization").apply {
                 if (token != null) header("Authorization", "Bearer $token")

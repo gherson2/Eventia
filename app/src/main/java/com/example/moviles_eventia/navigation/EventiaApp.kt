@@ -182,6 +182,11 @@ fun EventiaApp() {
                 ) {
                     val vm: DetalleEventoViewModel = hiltViewModel()
                     val estado by vm.uiState.collectAsStateWithLifecycle()
+                    LaunchedEffect(vm, navController) {
+                        vm.solicitarAcceso.collect {
+                            navController.navigate("acceso") { launchSingleTop = true }
+                        }
+                    }
                     DetalleEventoScreen(
                         estado = estado,
                         esFavorito = favoritos.eventos.any { it.id == estado.evento?.id },
@@ -189,6 +194,7 @@ fun EventiaApp() {
                         alCambiarFavorito = cambiarFavorito,
                         alVolver = { navController.popBackStack() },
                         alActualizar = vm::cargar,
+                        alInscripcion = vm::cambiarInscripcion,
                         alLugar = { navController.navigate("lugar/$it") }
                     )
                 }

@@ -23,7 +23,8 @@ fun EventDto.toEvent(): Event {
         capacity = capacity,
         availableSpots = availableSpots,
         description = description?.takeIf { it.isNotBlank() } ?: summary.orEmpty(),
-        endsAt = endsAt
+        endsAt = endsAt,
+        isAttending = isAttending == true
     )
 }
 

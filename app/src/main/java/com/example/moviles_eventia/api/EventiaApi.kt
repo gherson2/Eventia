@@ -8,6 +8,8 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.POST
 import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.Tag
 import com.example.moviles_eventia.api.dto.LoginRequest
 import com.example.moviles_eventia.api.dto.RegistroRequest
 import com.example.moviles_eventia.api.dto.AutenticacionDto
@@ -34,6 +36,12 @@ interface EventiaApi {
 
     @GET("events/{id}")
     suspend fun obtenerEvento(@Path("id") id: Int): EventDto
+
+    @POST("events/{id}/attendance")
+    suspend fun inscribir(@Path("id") id: Int, @Tag sesion: SesionEsperada): EventDto
+
+    @DELETE("events/{id}/attendance")
+    suspend fun cancelarInscripcion(@Path("id") id: Int, @Tag sesion: SesionEsperada): EventDto
 
     @GET("venues")
     suspend fun obtenerLugares(): List<VenueDto>

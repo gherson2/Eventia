@@ -10,6 +10,8 @@ import com.example.moviles_eventia.repositories.CuentaRepository
 import com.example.moviles_eventia.repositories.CuentaRepositoryImpl
 import com.example.moviles_eventia.session.SesionStore
 import com.example.moviles_eventia.session.DataStoreSesion
+import com.example.moviles_eventia.repositories.InscripcionRepository
+import com.example.moviles_eventia.repositories.InscripcionRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -19,6 +21,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoriosModule {
+    @Binds
+    @Singleton
+    abstract fun vincularInscripcionRepository(implementacion: InscripcionRepositoryImpl): InscripcionRepository
+
     @Binds
     @Singleton
     abstract fun vincularSesion(implementacion: DataStoreSesion): SesionStore

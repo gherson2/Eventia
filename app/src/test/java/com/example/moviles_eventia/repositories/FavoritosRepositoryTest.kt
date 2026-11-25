@@ -79,4 +79,18 @@ class FavoritosRepositoryTest {
         assertEquals(evento, repo.obtenerFavorito(evento.id))
         assertNull(repo.obtenerFavorito(999))
     }
+
+    @Test fun favoritoNoConservaLaInscripcionDeUnaCuenta() = runTest {
+        val dao = DaoPrueba()
+        val repo = FavoritosRepositoryImpl(dao, Gson())
+        val evento = RepositorioPrueba().evento.copy(isAttending = true)
+        repo.guardar(evento)
+        assertFalse(Gson().fromJson(dao.datos.value.single().json,
+            com.example.moviles_eventia.models.Event::class.java).isAttending)
+        assertFalse(repo.obtenerFavorito(evento.id)!!.isAttending)
+        assertFalse(repo.observarFavoritos().first().single().isAttending)
+        // También se sanea una copia antigua que tuviera ese campo activado.
+        dao.guardar(FavoritoEntity(evento.id, Gson().toJson(evento)))
+        assertFalse(repo.obtenerFavorito(evento.id)!!.isAttending)
+    }
 }

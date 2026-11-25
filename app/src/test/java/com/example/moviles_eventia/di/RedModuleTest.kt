@@ -14,8 +14,16 @@ import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.OkHttpClient
+import com.example.moviles_eventia.api.AutorizacionInterceptor
+import com.example.moviles_eventia.session.SesionPrueba
+import org.junit.Assert.assertFalse
 
 class RedModuleTest {
+    @Test fun clienteNoRepiteAutomaticamenteEscriturasTrasFalloDeConexion() {
+        val cliente = RedModule.proporcionarCliente(AutorizacionInterceptor(SesionPrueba()))
+        assertFalse(cliente.retryOnConnectionFailure)
+    }
+
     @Test fun retrofitConservaLaUrlConfiguradaEnElProyecto() {
         val retrofit = RedModule.proporcionarRetrofit(OkHttpClient())
         assertEquals(BuildConfig.BASE_URL, retrofit.baseUrl().toString())

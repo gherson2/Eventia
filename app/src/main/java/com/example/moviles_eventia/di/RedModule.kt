@@ -18,7 +18,10 @@ object RedModule {
     @Provides
     @Singleton
     fun proporcionarCliente(interceptor: AutorizacionInterceptor): OkHttpClient =
-        OkHttpClient.Builder().addInterceptor(interceptor).build()
+        OkHttpClient.Builder()
+            .retryOnConnectionFailure(false)
+            .addInterceptor(interceptor)
+            .build()
 
     @Provides
     @Singleton

@@ -17,6 +17,9 @@ class RepositorioPrueba : EventRepository {
     var errorEventosLugar: Exception? = null
     var esCopiaGuardada = false
     var resultadosCatalogo: List<EstadoCatalogo>? = null
+    var detalleRespuesta: Event? = null
+    var consultasDetalle = 0
+    var antesDelDetalle: (suspend () -> Unit)? = null
     val consultas = mutableListOf<Pair<String, Int?>>()
 
     override suspend fun obtenerEventos(busqueda: String, categoriaId: Int?): List<Event> {
@@ -32,10 +35,13 @@ class RepositorioPrueba : EventRepository {
     override suspend fun obtenerCategorias() = listOf(evento.category)
     override suspend fun obtenerEvento(id: Int): Event {
         error?.let { throw it }
-        return evento
+        return detalleRespuesta ?: evento
     }
-    override suspend fun obtenerDetalleEvento(id: Int) =
-        DetalleEvento(obtenerEvento(id), esCopiaGuardada)
+    override suspend fun obtenerDetalleEvento(id: Int): DetalleEvento {
+        consultasDetalle++
+        antesDelDetalle?.invoke()
+        return DetalleEvento(obtenerEvento(id), esCopiaGuardada)
+    }
     override suspend fun obtenerLugares(): List<Venue> {
         error?.let { throw it }
         return listOf(lugar)

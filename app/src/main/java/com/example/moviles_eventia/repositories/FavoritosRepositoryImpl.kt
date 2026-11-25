@@ -18,16 +18,16 @@ class FavoritosRepositoryImpl @Inject constructor(
         favoritos.map { favorito ->
             requireNotNull(gson.fromJson(favorito.json, Event::class.java)) {
                 "El favorito ${favorito.id} no contiene datos válidos"
-            }
+            }.copy(isAttending = false)
         }
     }.flowOn(Dispatchers.IO)
 
     override suspend fun obtenerFavorito(id: Int): Event? = withContext(Dispatchers.IO) {
-        dao.obtenerPorId(id)?.let { gson.fromJson(it.json, Event::class.java) }
+        dao.obtenerPorId(id)?.let { gson.fromJson(it.json, Event::class.java)?.copy(isAttending = false) }
     }
 
     override suspend fun guardar(evento: Event) = withContext(Dispatchers.IO) {
-        dao.guardar(FavoritoEntity(evento.id, gson.toJson(evento)))
+        dao.guardar(FavoritoEntity(evento.id, gson.toJson(evento.copy(isAttending = false))))
     }
 
     override suspend fun quitar(id: Int) = dao.quitar(id)

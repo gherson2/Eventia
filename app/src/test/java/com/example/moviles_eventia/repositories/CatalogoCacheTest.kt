@@ -155,4 +155,12 @@ class CatalogoCacheTest {
         assertEquals(listOf(evento), resultado.eventos)
         assertNull(resultado.aviso)
     }
+
+    @Test fun catalogoNoGuardaUnaInscripcionPersonalComoEstadoDeCuenta() = runTest {
+        responder(listOf(evento.copy(isAttending = true)))
+        val resultado = repo.observarCatalogo().toList().last()
+        assertFalse(resultado.eventos!!.single().isAttending)
+        val json = com.google.gson.JsonParser.parseString(cache.datos.getValue("catalogo").json).asJsonArray
+        assertFalse(json[0].asJsonObject["isAttending"].asBoolean)
+    }
 }

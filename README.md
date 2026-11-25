@@ -37,6 +37,8 @@ No representa la entrega completa ni una calificación.
 - Cuenta opcional: registro, acceso, cierre de sesión y perfil de usuario.
 - Sesión persistente con DataStore, autorización Bearer en solicitudes que admiten
   cuenta y redirección a acceso cuando una sesión autenticada recibe 401.
+- Inscripción y cancelación desde el detalle, con cupos actualizados y manejo de
+  conflictos de disponibilidad.
 
 ## Configuración
 
@@ -212,11 +214,14 @@ GET /venues/{id}/events
 POST /auth/register
 POST /auth/login
 GET /me
+POST /events/{id}/attendance
+DELETE /events/{id}/attendance
 ```
 
 El catálogo, los lugares y los favoritos siguen disponibles sin cuenta. Los
 errores 404 del detalle tienen mensajes específicos. Los errores de red o
-servidor permiten reintentar. Las inscripciones y su manejo de 409 siguen pendientes.
+servidor permiten reintentar. Los conflictos 409 de inscripción actualizan el detalle
+y muestran un aviso comprensible.
 
 ### Cuenta y sesión
 
@@ -248,8 +253,35 @@ se excluye del backup y de la transferencia entre dispositivos y no se registra
 en logs. **DataStore no cifra el token por sí mismo**; para un producto comercial
 convendría incorporar cifrado con Android Keystore.
 
-La validación de la sesión al inicio no equivale a inscripciones: el botón para
-inscribirse y la lista de inscripciones se incorporarán en otra etapa.
+### Inscripción y cancelación desde el detalle
+
+Un detalle remoto reciente muestra la inscripción de la cuenta actual mediante
+`isAttending`. El botón permite inscribirse o cancelar y utiliza los cupos devueltos
+por el servidor, sin sumarlos ni restarlos de forma optimista.
+
+- Sin cuenta, la acción abre acceso; al autenticar se regresa al evento y se
+  consulta de nuevo su estado. **No se inscribe automáticamente** al iniciar sesión:
+  el usuario confirma la acción desde el detalle.
+- Mientras se envía una operación se bloquean pulsaciones duplicadas.
+- Sin cupos se impide una inscripción nueva; una persona ya inscrita puede cancelar.
+- Los eventos pasados y las copias offline no permiten operaciones de inscripción.
+- Un 409 informa del conflicto y vuelve a consultar cupos e inscripción.
+- Un fallo de envío conserva el detalle visible y exige actualizarlo antes de
+  otra operación. No se repite el POST automáticamente desde la UI; el cliente
+  también desactiva la recuperación automática de fallos de conexión.
+- El 401 utiliza el cierre de sesión y la navegación al acceso ya implementados.
+
+`InscripcionRepository` encapsula las escrituras autenticadas. Un tag local de
+Retrofit fija la sesión esperada, no se envía como cabecera y evita que un cambio
+de cuenta previo al envío inscriba a otra persona. Las respuestas de una cuenta
+anterior se descartan y el detalle se recarga al cambiar de usuario.
+
+Los favoritos y el catálogo no conservan `isAttending` como información válida
+de sesión: se limpia al guardar/leer copias y solo se confía en datos remotos
+recientes de la cuenta actual. Este cambio JSON no modifica el esquema de Room.
+
+**Alcance pendiente:** la lista “mis inscripciones” en Perfil, separada en próximas
+y pasadas, todavía no está implementada; RF-12 aún no está completo.
 
 ## Compilar y probar
 
@@ -277,6 +309,10 @@ ausencia de contraseña en sus claves. No certifican la interfaz en un teléfono
 `CuentaPantallasTest` contiene dos pruebas instrumentadas de los composables
 con estados ficticios, sin modificar la sesión real. Requieren ejecutarse
 expresamente en un dispositivo o emulador; compilar el APK no significa ejecutarlas.
+Las pruebas de inscripciones también usan MockWebServer y estados ficticios;
+no se inscriben ni cancelan usuarios en el servidor público.
+`InscripcionPantallaTest` comprueba botones con composables aislados y requiere
+ejecución instrumentada para certificar la interfaz.
 
 Las nuevas pruebas de favoritos verifican copia completa, actualización sin
 duplicados, eliminación, Deshacer, errores y observación del estado.
@@ -358,6 +394,18 @@ pendientes de comprobar en dispositivo.
 - No se crearon cuentas en el servidor público ni se instaló esta versión en el
   teléfono. Los flujos visuales y las pruebas instrumentadas siguen pendientes.
 
+### Verificación de inscripción desde el detalle
+
+- Compilación debug, pruebas JVM, Lint y compilación del APK de pruebas completados.
+- **119 pruebas JVM aprobadas**, sin fallos.
+- Se verificaron POST/DELETE autenticados, cupos, doble pulsación, 409, expiración,
+  regreso del estado de sesión y descarte de respuestas antiguas.
+- Se comprobó que favoritos y caché no recuperan una inscripción personal como
+  estado válido de otra cuenta.
+- Lint terminó sin errores bloqueantes; conserva 26 advertencias.
+- No se realizaron inscripciones en el backend público ni se instaló esta versión
+  en el teléfono. Las pruebas instrumentadas se compilaron, pero no se ejecutaron.
+
 ## Lo que sigue pendiente
 
 - Comprobar en dispositivo la persistencia de favoritos tras cierre forzado.
@@ -365,7 +413,8 @@ pendientes de comprobar en dispositivo.
 - Comprobar en dispositivo la migración Room, la reapertura del catálogo en modo avión
   y la actualización manual al recuperar conexión.
 - Verificar registro, login, logout, rotación y restauración de sesión en dispositivo.
-- Inscripción/cancelación, manejo de 409 y mis inscripciones.
+- Verificar en dispositivo inscripción, cancelación, 409, regreso del login y actualización de cupos.
+- Lista “mis inscripciones” en Perfil, separada en próximas y pasadas.
 - Mapa con marcadores, resumen y filtro de categoría.
 - Validación completa de accesibilidad, tamaños de pantalla y rotación.
 - Video final, documentación completa de la entrega y etiqueta `v1.0` cuando corresponda.

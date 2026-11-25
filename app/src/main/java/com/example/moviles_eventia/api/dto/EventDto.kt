@@ -12,7 +12,8 @@ data class EventDto(
     val capacity: Int?,
     val availableSpots: Int?,
     val description: String? = null,
-    val endsAt: String? = null
+    val endsAt: String? = null,
+    val isAttending: Boolean? = null
 )
 
 data class CategoryDto(

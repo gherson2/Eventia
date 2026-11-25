@@ -35,7 +35,7 @@ class EventRepositoryImpl @Inject constructor(
 
         val eventosDto = api.obtenerEventos(busqueda.trim().takeIf { it.isNotEmpty() }, categoriaId)
 
-        return filtrarEventos(eventosDto.map { it.toEvent() }, busqueda, categoriaId)
+        return filtrarEventos(eventosDto.map { it.toEvent().copy(isAttending = false) }, busqueda, categoriaId)
     }
 
     override fun observarCatalogo(busqueda: String, categoriaId: Int?) = flow {
@@ -47,7 +47,7 @@ class EventRepositoryImpl @Inject constructor(
             val completa = if (clave == "catalogo") null else cache.obtener("catalogo")
             listOfNotNull(exacta, completa).maxByOrNull { it.guardadoEn }?.let { fila ->
                 val datos: List<Event> = requireNotNull(gson.fromJson(fila.json, tipoEventos))
-                fila to filtrarEventos(datos, busqueda, categoriaId)
+                fila to filtrarEventos(datos.map { it.copy(isAttending = false) }, busqueda, categoriaId)
             }
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -111,7 +111,7 @@ class EventRepositoryImpl @Inject constructor(
         if (!conectividad.tieneConexion()) {
             val guardado = favoritos.obtenerFavorito(id)
                 ?: throw IOException("No hay un favorito guardado para este evento.")
-            return DetalleEvento(guardado, esCopiaGuardada = true)
+            return DetalleEvento(guardado.copy(isAttending = false), esCopiaGuardada = true)
         }
         return try {
             DetalleEvento(obtenerEvento(id))
@@ -121,7 +121,7 @@ class EventRepositoryImpl @Inject constructor(
             val permiteCopia = e is IOException || (e is HttpException && e.code() in 500..599)
             if (!permiteCopia) throw e
             val guardado = favoritos.obtenerFavorito(id) ?: throw e
-            DetalleEvento(guardado, esCopiaGuardada = true)
+            DetalleEvento(guardado.copy(isAttending = false), esCopiaGuardada = true)
         }
     }
     override suspend fun obtenerLugares() = api.obtenerLugares().map { it.toVenue() }

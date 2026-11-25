@@ -21,11 +21,13 @@ fun DetalleEventoScreen(
     alCambiarFavorito: (Event) -> Unit,
     alVolver: () -> Unit,
     alActualizar: () -> Unit,
+    alInscripcion: () -> Unit,
     alLugar: (Int) -> Unit
 ) {
     val contexto = LocalContext.current
     Column(Modifier.fillMaxSize()) {
-        Encabezado("Detalle del evento", alActualizar, alVolver, estado.cargando)
+        Encabezado("Detalle del evento", alActualizar, alVolver,
+            estado.cargando || estado.modificandoInscripcion)
         val evento = estado.evento
         when {
             evento == null && estado.cargando -> EstadoCargando()
@@ -85,6 +87,31 @@ fun DetalleEventoScreen(
                             else "Sin cupos disponibles",
                         color = MaterialTheme.colorScheme.error
                     )
+                }
+                item {
+                    estado.mensajeInscripcion?.let {
+                        Text(it, color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp))
+                    }
+                    if (estado.haySesion && estado.datosRecientes && evento.isAttending) {
+                        Text("Estás inscrito en este evento.", style = MaterialTheme.typography.titleMedium)
+                    }
+                    Button(
+                        onClick = alInscripcion,
+                        enabled = estado.puedeGestionarInscripcion,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    ) {
+                        Text(when {
+                            estado.modificandoInscripcion -> "Procesando…"
+                            estado.esCopiaGuardada -> "Conéctate para gestionar tu inscripción"
+                            !estado.datosRecientes -> "Actualiza el detalle para continuar"
+                            !evento.esProximo() -> "Inscripciones no disponibles"
+                            !evento.isAttending && evento.availableSpots == 0 -> "Sin cupos disponibles"
+                            !estado.haySesion -> "Inicia sesión para inscribirte"
+                            evento.isAttending -> "Cancelar inscripción"
+                            else -> "Inscribirme"
+                        })
+                    }
                 }
                 item {
                     Text("Descripción", style = MaterialTheme.typography.titleLarge)
