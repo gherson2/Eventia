@@ -9,14 +9,22 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import okhttp3.OkHttpClient
+import com.example.moviles_eventia.api.AutorizacionInterceptor
 
 @Module
 @InstallIn(SingletonComponent::class)
 object RedModule {
     @Provides
     @Singleton
-    fun proporcionarRetrofit(): Retrofit = Retrofit.Builder()
+    fun proporcionarCliente(interceptor: AutorizacionInterceptor): OkHttpClient =
+        OkHttpClient.Builder().addInterceptor(interceptor).build()
+
+    @Provides
+    @Singleton
+    fun proporcionarRetrofit(cliente: OkHttpClient): Retrofit = Retrofit.Builder()
         .baseUrl(BuildConfig.BASE_URL)
+        .client(cliente)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 

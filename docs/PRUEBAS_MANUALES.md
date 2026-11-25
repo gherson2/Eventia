@@ -44,6 +44,16 @@ Las verificaciones automáticas de repositorio/ViewModel no certifican la interf
 | Buscar y luego limpiar filtros | No reemplazar el catálogo completo por los resultados de búsqueda | Prueba JVM; UI pendiente |
 | Migrar una instalación con favoritos | Mantener favoritos al agregar caché Room | CatalogoMigracionTest añadido; ejecución pendiente |
 | Recibir un catálogo vacío desde la API | Reemplazar la caché anterior con una lista vacía válida | Prueba JVM; UI pendiente |
+| Registrar con campos inválidos | Validar antes de hacer solicitudes | Prueba JVM; UI pendiente |
+| Registrar e iniciar sesión | Guardar token y mostrar usuario en Perfil | MockWebServer; servidor real y UI pendientes |
+| Error 422 por correo registrado | Mostrar el mensaje junto al campo | Prueba JVM; UI pendiente |
+| Clave incorrecta (401 de login) | Mostrar error sin cerrar otra sesión existente | Prueba JVM; UI pendiente |
+| Reiniciar la app con una sesión guardada | Recuperar usuario sin exigir acceso nuevamente | DataStore con archivo temporal; dispositivo pendiente |
+| Rotar en el formulario | Conservar campos y clave solo en memoria | ViewModel probado; rotación real pendiente |
+| Cerrar sesión | Borrar sesión, sin borrar favoritos ni caché | Cierre local probado; UI pendiente |
+| Sesión expirada en solicitud autenticada | Borrar sesión y llevar al acceso sin cerrar la app | Interceptor probado; navegación real pendiente |
+| Respuesta 401 de una sesión anterior | No borrar una sesión nueva | Prueba JVM |
+| Abrir sin cuenta | Mantener catálogo, lugares y favoritos disponibles | UI pendiente |
 
 ## Verificación HTTP de referencia
 

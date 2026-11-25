@@ -43,6 +43,12 @@ import com.example.moviles_eventia.ui.screens.FavoritosViewModel
 import com.example.moviles_eventia.ui.screens.FavoritosScreen
 import com.example.moviles_eventia.models.Event
 import com.example.moviles_eventia.ui.screens.ConectividadViewModel
+import com.example.moviles_eventia.ui.screens.CuentaViewModel
+import com.example.moviles_eventia.ui.screens.PerfilScreen
+import com.example.moviles_eventia.ui.screens.AccesoViewModel
+import com.example.moviles_eventia.ui.screens.AccesoScreen
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 private enum class Pantalla(
     val ruta: String,
@@ -64,7 +70,10 @@ fun EventiaApp() {
     val favoritos by favoritosVm.uiState.collectAsStateWithLifecycle()
     val conectividadVm: ConectividadViewModel = hiltViewModel()
     val conectado by conectividadVm.conectado.collectAsStateWithLifecycle()
+    val cuentaVm: CuentaViewModel = hiltViewModel()
+    val cuenta by cuentaVm.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val alcance = rememberCoroutineScope()
     val cambiarFavorito: (Event) -> Unit = { evento ->
         favoritosVm.cambiarFavorito(evento, guardar = favoritos.eventos.none { it.id == evento.id })
     }
@@ -80,6 +89,15 @@ fun EventiaApp() {
             if (resultado == SnackbarResult.ActionPerformed) {
                 mensaje.quitado?.let(favoritosVm::restaurar)
             }
+        }
+    }
+
+    LaunchedEffect(cuentaVm, navController) {
+        cuentaVm.expiraciones.collect {
+            if (navController.currentDestination?.route?.startsWith("acceso") != true) {
+                navController.navigate("acceso") { launchSingleTop = true }
+            }
+            alcance.launch { snackbar.showSnackbar("Tu sesión expiró. Inicia sesión nuevamente.") }
         }
     }
 
@@ -208,7 +226,36 @@ fun EventiaApp() {
 
                 // PANTALLA PERFIL
                 composable(Pantalla.PERFIL.ruta) {
-                    PantallaTemporal("Perfil")
+                    PerfilScreen(
+                        estado = cuenta,
+                        alIngresar = { navController.navigate("acceso") },
+                        alRegistrar = { navController.navigate("acceso?registro=true") },
+                        alActualizar = cuentaVm::actualizar,
+                        alCerrar = cuentaVm::cerrarSesion
+                    )
+                }
+
+                composable(
+                    route = "acceso?registro={registro}",
+                    arguments = listOf(navArgument("registro") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    })
+                ) {
+                    val vm: AccesoViewModel = hiltViewModel()
+                    val estado by vm.uiState.collectAsStateWithLifecycle()
+                    LaunchedEffect(estado.autenticado) {
+                        if (estado.autenticado) navController.popBackStack()
+                    }
+                    AccesoScreen(
+                        estado = estado,
+                        alNombre = vm::cambiarNombre,
+                        alCorreo = vm::cambiarCorreo,
+                        alClave = vm::cambiarClave,
+                        alCambiarModo = vm::cambiarModo,
+                        alEnviar = vm::enviar,
+                        alVolver = { navController.popBackStack() }
+                    )
                 }
             }
         }

@@ -34,6 +34,9 @@ No representa la entrega completa ni una calificación.
 - Aviso global de conexión mediante las capacidades de red informadas por Android.
 - Catálogo y categorías en caché Room para consultar los últimos datos descargados,
   con antigüedad visible, filtros locales y actualización manual.
+- Cuenta opcional: registro, acceso, cierre de sesión y perfil de usuario.
+- Sesión persistente con DataStore, autorización Bearer en solicitudes que admiten
+  cuenta y redirección a acceso cuando una sesión autenticada recibe 401.
 
 ## Configuración
 
@@ -81,6 +84,7 @@ Se mantiene la configuración original del proyecto, no la de `25`:
 | Hilt / Hilt Navigation Compose | 2.59.2 / 1.2.0 |
 | KSP | 2.3.4 |
 | Room | 2.7.2 |
+| DataStore Preferences / OkHttp | 1.1.4 / 4.12.0 |
 | Desugaring de java.time en Android 24–25 | desugar_jdk_libs 2.1.5 |
 | Pruebas | JUnit 4.13.2, Coroutines Test 1.10.2, MockWebServer 4.12.0 |
 
@@ -110,6 +114,10 @@ Screen → ViewModel → EventRepository → EventRepositoryImpl → EventiaApi 
 - `di/RepositoriosModule.kt`: vínculo de la interfaz del repositorio con su
   implementación mediante `@Binds` y `@Singleton`.
 - `di/PersistenciaModule.kt`: base de datos Room, DAO y serializador de favoritos.
+- `session/`: interfaz de almacenamiento de sesión e implementación DataStore.
+- `di/SesionModule.kt`: instancia única de DataStore para la aplicación.
+- `repositories/CuentaRepositoryImpl.kt`: cuenta y actualización del usuario.
+- `api/AutorizacionInterceptor.kt`: cabecera Bearer y expiración 401.
 
 La UI no accede a Retrofit y no recibe DTO.
 Hilt reemplaza `AppContainer`, `RetrofitClient` y las fábricas manuales de ViewModel.
@@ -201,11 +209,47 @@ GET /categories
 GET /venues
 GET /venues/{id}
 GET /venues/{id}/events
+POST /auth/register
+POST /auth/login
+GET /me
 ```
 
-Las consultas son públicas y no requieren cuenta. Los errores 404 del detalle
-tienen mensajes específicos. Los errores de red o servidor permiten reintentar.
-Todavía no existen flujos autenticados ni manejo de sesión 401/inscripciones 409.
+El catálogo, los lugares y los favoritos siguen disponibles sin cuenta. Los
+errores 404 del detalle tienen mensajes específicos. Los errores de red o
+servidor permiten reintentar. Las inscripciones y su manejo de 409 siguen pendientes.
+
+### Cuenta y sesión
+
+Desde Perfil se puede iniciar sesión o crear una cuenta. Los formularios validan
+nombre en el registro, correo y contraseña de al menos ocho caracteres antes de
+consultar la API. Los errores 400/422 se muestran junto al campo correspondiente.
+El perfil muestra nombre, correo, actualización y cierre local de sesión.
+
+`CuentaRepository` separa formularios y perfil de la API y de DataStore.
+`SesionStore` conserva token y datos básicos del usuario de forma atómica.
+Al reabrir la aplicación se recupera el usuario y se consulta `/me` para validar
+la sesión; un fallo de conexión conserva la sesión local y permite explorar.
+No se obliga al usuario a autenticarse para utilizar las funciones públicas.
+
+El interceptor agrega `Accept: application/json` y adjunta el token a `/me` y
+a rutas de detalle/inscripción que admiten sesión. No lo envía a login, registro
+ni catálogo público. Un 401 autenticado borra la sesión y notifica a navegación,
+que abre el formulario sin cerrar la aplicación. Un 401 de login se trata como
+credenciales incorrectas, no como expiración de otra cuenta.
+
+Una respuesta antigua no puede invalidar una sesión nueva. Tampoco puede
+restaurarse un usuario con un refresco tardío después de cerrar sesión.
+El cierre de sesión no llama a un endpoint inexistente ni borra favoritos/caché.
+
+La contraseña solo vive en memoria del ViewModel: sobrevive a la rotación, pero
+no se guarda en SavedStateHandle ni en DataStore, y se limpia al autenticar o
+cambiar de formulario. El token se almacena en los archivos privados de la app,
+se excluye del backup y de la transferencia entre dispositivos y no se registra
+en logs. **DataStore no cifra el token por sí mismo**; para un producto comercial
+convendría incorporar cifrado con Android Keystore.
+
+La validación de la sesión al inicio no equivale a inscripciones: el botón para
+inscribirse y la lista de inscripciones se incorporarán en otra etapa.
 
 ## Compilar y probar
 
@@ -225,6 +269,14 @@ Las pruebas JVM usan un servidor HTTP local de prueba, no crean cuentas ni cambi
 datos del backend público. Cubren consultas y rutas, mapeo, filtros, fechas,
 coordenadas, espera de búsqueda, restauración de filtros, 404 y conservación de
 datos ante fallos. No sustituyen las pruebas visuales en Android.
+
+Las pruebas de cuenta usan MockWebServer con credenciales ficticias. No registran
+usuarios reales ni envían datos al backend público. También se prueba DataStore
+con archivos temporales aislados: reapertura, cierre, expiración condicionada y
+ausencia de contraseña en sus claves. No certifican la interfaz en un teléfono.
+`CuentaPantallasTest` contiene dos pruebas instrumentadas de los composables
+con estados ficticios, sin modificar la sesión real. Requieren ejecutarse
+expresamente en un dispositivo o emulador; compilar el APK no significa ejecutarlas.
 
 Las nuevas pruebas de favoritos verifican copia completa, actualización sin
 duplicados, eliminación, Deshacer, errores y observación del estado.
@@ -294,14 +346,26 @@ pendientes de comprobar en dispositivo.
 - La prueba de migración fue compilada, no ejecutada. La migración real, la
   reapertura en modo avión y la interfaz siguen pendientes de probar en dispositivo.
 
+### Verificación de cuenta y sesión
+
+- Compilación debug, pruebas JVM, Lint y compilación del APK de pruebas completados.
+- **93 pruebas JVM aprobadas**, sin fallos.
+- Se comprobaron registro/login con MockWebServer, campos inválidos, errores 422,
+  autorización Bearer, expiración 401, cierre local y respuestas antiguas.
+- DataStore se verificó con archivos temporales reales, incluyendo reapertura
+  y ausencia de contraseña en los datos persistidos.
+- Lint terminó sin errores bloqueantes; conserva advertencias.
+- No se crearon cuentas en el servidor público ni se instaló esta versión en el
+  teléfono. Los flujos visuales y las pruebas instrumentadas siguen pendientes.
+
 ## Lo que sigue pendiente
 
 - Comprobar en dispositivo la persistencia de favoritos tras cierre forzado.
 - Comprobar el aviso global y el detalle de favoritos en modo avión y tras recuperar Internet.
 - Comprobar en dispositivo la migración Room, la reapertura del catálogo en modo avión
   y la actualización manual al recuperar conexión.
-- Registro, login, logout y sesión persistida en DataStore.
-- Inscripción/cancelación, manejo de 401/409 y mis inscripciones.
+- Verificar registro, login, logout, rotación y restauración de sesión en dispositivo.
+- Inscripción/cancelación, manejo de 409 y mis inscripciones.
 - Mapa con marcadores, resumen y filtro de categoría.
 - Validación completa de accesibilidad, tamaños de pantalla y rotación.
 - Video final, documentación completa de la entrega y etiqueta `v1.0` cuando corresponda.

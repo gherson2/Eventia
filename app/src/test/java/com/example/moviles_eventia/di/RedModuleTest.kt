@@ -13,10 +13,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import okhttp3.OkHttpClient
 
 class RedModuleTest {
     @Test fun retrofitConservaLaUrlConfiguradaEnElProyecto() {
-        val retrofit = RedModule.proporcionarRetrofit()
+        val retrofit = RedModule.proporcionarRetrofit(OkHttpClient())
         assertEquals(BuildConfig.BASE_URL, retrofit.baseUrl().toString())
     }
 

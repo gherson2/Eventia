@@ -6,8 +6,22 @@ import com.example.moviles_eventia.api.dto.VenueDto
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.POST
+import retrofit2.http.Body
+import com.example.moviles_eventia.api.dto.LoginRequest
+import com.example.moviles_eventia.api.dto.RegistroRequest
+import com.example.moviles_eventia.api.dto.AutenticacionDto
+import com.example.moviles_eventia.api.dto.UsuarioDto
 
 interface EventiaApi {
+    @POST("auth/login")
+    suspend fun iniciarSesion(@Body solicitud: LoginRequest): AutenticacionDto
+
+    @POST("auth/register")
+    suspend fun registrar(@Body solicitud: RegistroRequest): AutenticacionDto
+
+    @GET("me")
+    suspend fun obtenerUsuario(): UsuarioDto
 
     @GET("events")
     suspend fun obtenerEventos(
