@@ -18,7 +18,8 @@ import org.junit.Test
 
 // Solo composables con estados ficticios: no consulta API ni cambia la sesión real.
 class CuentaPantallasTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule(order = 0) val primerPlano = PrimerPlanoTestRule()
+    @get:Rule(order = 1) val compose = createComposeRule()
 
     @Test fun accesoMuestraErrorDeCampoYPermiteContinuarSinCuenta() {
         val volver = AtomicBoolean(false)

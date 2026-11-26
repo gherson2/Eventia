@@ -1,7 +1,6 @@
 
 package com.example.moviles_eventia.navigation
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -49,6 +47,7 @@ import com.example.moviles_eventia.ui.screens.PerfilScreen
 import com.example.moviles_eventia.ui.screens.AccesoViewModel
 import com.example.moviles_eventia.ui.screens.AccesoScreen
 import com.example.moviles_eventia.ui.screens.MisInscripcionesViewModel
+import com.example.moviles_eventia.ui.screens.MapaScreen
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 
@@ -67,6 +66,9 @@ private enum class Pantalla(
 fun EventiaApp() {
 
     val navController = rememberNavController()
+    // Explorar y Mapa comparten catálogo, búsqueda y categoría.
+    val catalogoVm: ExplorarViewModel = hiltViewModel()
+    val catalogo by catalogoVm.uiState.collectAsStateWithLifecycle()
     // Un único observador de Room comparte el estado entre todos los destinos.
     val favoritosVm: FavoritosViewModel = hiltViewModel()
     val favoritos by favoritosVm.uiState.collectAsStateWithLifecycle()
@@ -157,21 +159,19 @@ fun EventiaApp() {
             ) {
                 // PANTALLA EXPLORAR
                 composable(Pantalla.EXPLORAR.ruta) {
-                    val viewModel: ExplorarViewModel = hiltViewModel()
                     val lugaresViewModel: LugaresViewModel = hiltViewModel()
-                    val estado by viewModel.uiState.collectAsStateWithLifecycle()
                     val lugares by lugaresViewModel.uiState.collectAsStateWithLifecycle()
 
                     ExplorarScreen(
-                        estado = estado,
+                        estado = catalogo,
                         lugares = lugares,
                         favoritos = favoritos,
                         alCambiarFavorito = cambiarFavorito,
-                        alBuscar = viewModel::cambiarBusqueda,
-                        alFiltrar = viewModel::cambiarCategoria,
-                        alLimpiar = viewModel::limpiarFiltros,
-                        alActualizar = viewModel::obtenerEventos,
-                        alCargarCategorias = viewModel::obtenerCategorias,
+                        alBuscar = catalogoVm::cambiarBusqueda,
+                        alFiltrar = catalogoVm::cambiarCategoria,
+                        alLimpiar = catalogoVm::limpiarFiltros,
+                        alActualizar = catalogoVm::obtenerEventos,
+                        alCargarCategorias = catalogoVm::obtenerCategorias,
                         alActualizarLugares = lugaresViewModel::cargar,
                         alEvento = { navController.navigate("evento/$it") },
                         alLugar = { navController.navigate("lugar/$it") }
@@ -219,7 +219,16 @@ fun EventiaApp() {
 
                 // PANTALLA MAPA
                 composable(Pantalla.MAPA.ruta) {
-                    PantallaTemporal("Mapa")
+                    MapaScreen(
+                        estado = catalogo, favoritos = favoritos,
+                        alFiltrar = catalogoVm::cambiarCategoria,
+                        alLimpiar = catalogoVm::limpiarFiltros,
+                        alActualizar = catalogoVm::obtenerEventos,
+                        alCargarCategorias = catalogoVm::obtenerCategorias,
+                        alEvento = { navController.navigate("evento/$it") },
+                        alCambiarFavorito = cambiarFavorito,
+                        cargarTeselas = conectado != false
+                    )
                 }
 
                 // PANTALLA FAVORITOS
@@ -275,27 +284,5 @@ fun EventiaApp() {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PantallaTemporal(titulo: String) {
-
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        Text(
-            text = titulo,
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Text(
-            text = "Sección en desarrollo",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 8.dp)
-        )
     }
 }

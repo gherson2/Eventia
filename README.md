@@ -1,10 +1,10 @@
-# Eventia · catálogo, lugares, Hilt y favoritos
+# Eventia
 
 Aplicación Android del proyecto final de Programación de Aplicaciones Móviles 1.
 Se adaptaron catálogo, detalles y lugares del proyecto de referencia `25`,
 conservando el paquete y la configuración de `Pro_final_Moviles`. En el siguiente
-avance se integró Hilt para gestionar las dependencias existentes. La etapa actual
-agrega favoritos locales con Room, sin trasladar el resto del proyecto completo.
+avance se integró Hilt para gestionar las dependencias existentes. Se añadieron
+favoritos, caché, cuenta, inscripciones y mapa en este proyecto.
 No representa la entrega completa ni una calificación.
 
 ## Funciones de esta etapa
@@ -41,6 +41,9 @@ No representa la entrega completa ni una calificación.
   conflictos de disponibilidad.
 - “Mis inscripciones” en Perfil, con próximas y pasadas, acceso al detalle y
   actualización al regresar de una inscripción o cancelación.
+- Mapa OpenStreetMap con marcadores, filtro de categoría compartido con Explorar,
+  selección, resumen y acceso al detalle. Los eventos en el mismo punto pueden
+  recorrerse mediante “Otro evento aquí”.
 
 ## Configuración
 
@@ -73,6 +76,7 @@ Se mantiene la configuración original del proyecto, no la de `25`:
 
 | Componente | Versión/configuración |
 |---|---|
+| Android Studio instalado en este equipo | 2026.1.3, build AI-261.26222.65.2613.16025427 |
 | Gradle | 9.5.0 |
 | Android Gradle Plugin | 9.3.3 |
 | Plugin Kotlin Compose | 2.2.10 |
@@ -89,11 +93,13 @@ Se mantiene la configuración original del proyecto, no la de `25`:
 | KSP | 2.3.4 |
 | Room | 2.7.2 |
 | DataStore Preferences / OkHttp | 1.1.4 / 4.12.0 |
+| Mapas | osmdroid 6.1.20 / OpenStreetMap |
 | Desugaring de java.time en Android 24–25 | desugar_jdk_libs 2.1.5 |
 | Pruebas | JUnit 4.13.2, Coroutines Test 1.10.2, MockWebServer 4.12.0 |
 
-La versión exacta de Android Studio usada por el estudiante queda pendiente de registrar
-(Help → About). La validación de esta etapa se realiza con Gradle por consola.
+La versión instalada de Android Studio se obtuvo de su `product-info.json`;
+si se usa otra instalación, actualizarla con Help → About.
+La validación de esta etapa se realiza con Gradle por consola.
 No confundas la versión de Kotlin embebida en Gradle con la del plugin del proyecto.
 
 ## Arquitectura
@@ -130,7 +136,8 @@ La actividad usa `@AndroidEntryPoint`. Los ViewModel reciben la interfaz
 los que necesitan filtros o identificadores también reciben `SavedStateHandle`.
 
 Retrofit, API y repositorio se comparten durante la vida de la aplicación.
-Los ViewModel de catálogo y detalles pertenecen a su destino de navegación.
+El ViewModel de catálogo se comparte en la actividad entre Explorar y Mapa;
+los ViewModel de detalles pertenecen a su destino de navegación.
 `FavoritosViewModel` se comparte en la actividad para sincronizar los corazones
 de todas las pantallas. Ningún ViewModel es singleton. Hilt conserva la integración
 con los argumentos `eventoId` y `lugarId`.
@@ -446,20 +453,85 @@ pendientes de comprobar en dispositivo.
 - Las pruebas de pestañas y navegación de tarjetas se compilaron, pero no se
   ejecutaron en teléfono. No se consultaron ni modificaron cuentas reales.
 
+## Mapa y ubicación
+
+El mapa usa osmdroid y teselas de `https://tile.openstreetmap.org/`.
+No requiere una clave API ni facturación. Confirmar su aprobación con el docente.
+`ConfiguracionMapa` define HTTPS, atribución visible, un agente propio
+`EventiaAndroid/...` y la política del proveedor: dos descargas simultáneas,
+sin descarga masiva ni preventiva.
+
+`agruparEventosMapa` omite coordenadas nulas, no finitas o fuera de rango y
+respeta próximos eventos y categoría. Un punto compartido agrupa varios eventos.
+La lista “Elegir evento” ofrece una alternativa a tocar el marcador.
+El resumen permite guardar favoritos y abrir el detalle.
+
+La cámara y selección usan estado guardable. `MapaEventos` integra `onResume`,
+`onPause` y `onDetach` del mapa con el lifecycle de Compose. El fondo se guarda
+en caché de la app y requiere conexión para cargar zonas nuevas: no se garantiza
+cartografía offline. Los datos de eventos guardados son independientes de las
+teselas. Un fallo de teselas ofrece reintento sin cerrar la pantalla.
+No se solicita ubicación del usuario; RF-10 es opcional y no está implementado.
+
+La [guía de entrega y defensa](docs/ENTREGA.md) incluye el guion del video y los
+pasos para etiquetar la versión final después de verificarla.
+La [matriz de requisitos](docs/REQUISITOS.md) relaciona cada RF con su implementación
+y distingue pruebas automáticas de verificaciones finales en teléfono.
+
+## Última validación del mapa
+
+- `assembleDebug`, `testDebugUnitTest`, `lintDebug` y `assembleDebugAndroidTest`
+  completados; **143 pruebas JVM aprobadas**, sin fallos. Lint: 26 advertencias.
+- Se añadieron pruebas de coordenadas inválidas, categorías, agrupación y
+  recorrido circular de eventos coincidentes.
+- El catálogo integra búsqueda, filtros y avisos en su lista desplazable para
+  no ocultar las tarjetas en pantallas de poca altura.
+- **17 pruebas Android aprobadas** en un 21061110AG con Android 13:
+  última repetición `OK (17 tests)`, 37,211 s, ejecutadas directamente con ADB.
+- Incluyen persistencia y migración/caché de Room en bases aisladas, Cuenta,
+  inscripciones ficticias, seis casos del mapa (incluido toque de marcador nativo)
+  y navegación de la app real catálogo → detalle → mapa → resumen → detalle.
+- La navegación real es una prueba optativa de lectura del backend configurado:
+  no registra cuentas ni cambia favoritos o inscripciones. Puede actualizar la
+  caché pública de la app. Si el detalle muestra explícitamente un fallo de
+  conexión, comprueba ese mensaje y permite un único reintento mediante el botón
+  de UI. Si sigue fallando, la prueba falla y registra el estado de la pantalla;
+  no omite errores persistentes ni reintenta registros o inscripciones.
+- `PrimerPlanoTestRule` abre una actividad vacía para evitar el bloqueo de inicio
+  en segundo plano de MIUI y mantiene encendidas solo las ventanas de prueba.
+  El teléfono debe estar desbloqueado al comenzar. No modifica permisos ni el
+  tiempo de bloqueo global.
+- Se corrigieron dos verificaciones del test, sin cambiar esas funciones de la
+  app: esperar hasta que el resumen del toque nativo esté visible y desplazar la
+  lista hasta el título antes de comprobarlo. Una revisión posterior reprodujo
+  también fallos reales de conexión en el detalle: no todos los tiempos de
+  espera agotados se debían a una fila fuera de pantalla.
+
+Para repetir tras compilar e instalar los APK debug y de pruebas:
+
+```powershell
+adb shell am instrument -w -r -e eventia.liveReadOnly true com.example.moviles_eventia.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+Sin `eventia.liveReadOnly=true`, se omite la prueba que requiere el backend real.
+El resultado anterior no certifica todavía modo avión, rotación física ni
+escrituras de cuenta/inscripción con el servidor.
+
 ## Lo que sigue pendiente
 
 - Comprobar en dispositivo la persistencia de favoritos tras cierre forzado.
 - Comprobar el aviso global y el detalle de favoritos en modo avión y tras recuperar Internet.
-- Comprobar en dispositivo la migración Room, la reapertura del catálogo en modo avión
-  y la actualización manual al recuperar conexión.
+- La migración Room pasó con una base aislada; falta comprobar una instalación
+  previa real, la reapertura del catálogo en modo avión y la actualización al recuperar conexión.
 - Verificar registro, login, logout, rotación y restauración de sesión en dispositivo.
 - Verificar en dispositivo inscripción, cancelación, 409, regreso del login y actualización de cupos.
-- Comprobar en dispositivo las pestañas de inscripciones, el regreso del detalle
-  tras cancelar y la limpieza de las listas al cambiar de cuenta.
-- Mapa con marcadores, resumen y filtro de categoría.
+- Las pestañas y protección entre cuentas pasaron con datos ficticios; falta
+  comprobar el regreso del detalle tras cancelar y el cambio de cuenta real.
+- Verificar visualmente las teselas y sus errores de red; confirmar la aprobación
+  de la biblioteca de mapas por el docente.
 - Validación completa de accesibilidad, tamaños de pantalla y rotación.
 - Video final, documentación completa de la entrega y etiqueta `v1.0` cuando corresponda.
 
 El catálogo sin conexión requiere haber descargado datos al menos una vez.
 Los favoritos y la caché se almacenan por separado.
-No se han trasladado las funcionalidades restantes ni el historial Git del proyecto `25`.
+No se ha trasladado el historial Git del proyecto `25`.

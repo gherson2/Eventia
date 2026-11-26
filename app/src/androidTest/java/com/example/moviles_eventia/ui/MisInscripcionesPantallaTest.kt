@@ -20,7 +20,8 @@ import org.junit.Test
 
 // Composables aislados con datos ficticios; no se consulta la cuenta del teléfono.
 class MisInscripcionesPantallaTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule(order = 0) val primerPlano = PrimerPlanoTestRule()
+    @get:Rule(order = 1) val compose = createComposeRule()
     private val usuario = Usuario(7, "Ana", "ana@example.test")
     private val evento = Event(42, "Jazz futuro", "Concierto", "2099-12-01T20:00:00Z",
         Category(3, "Música"), null, Venue(7, "Teatro", "Calle 7", null, null), 50, 10)

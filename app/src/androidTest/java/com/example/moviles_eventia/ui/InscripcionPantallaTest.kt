@@ -19,7 +19,8 @@ import org.junit.Test
 
 // Estados locales: no inscribe usuarios reales ni utiliza la sesión del dispositivo.
 class InscripcionPantallaTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule(order = 0) val primerPlano = PrimerPlanoTestRule()
+    @get:Rule(order = 1) val compose = createComposeRule()
     private val evento = Event(42, "Jazz", "Concierto", "2099-12-01T20:00:00-04:00",
         Category(3, "Música"), null, Venue(7, "Teatro", "Calle 7", null, null), 50, 10)
 

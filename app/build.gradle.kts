@@ -9,7 +9,9 @@ plugins {
 
 val local = Properties().apply {
     val file = rootProject.file("local.properties")
-    if (file.exists()) file.inputStream().use { load(it) }
+    if (file.exists()) file.inputStream().use { load(it) }git add .
+    git commit -m "feat: agregar mapa de eventos con filtros, marcadores y acceso al detalle"
+    git push
 }
 val apiUrl = local.getProperty("EVENTIA_BASE_URL", "https://eventia.jmacboy.dev/api/")
 require(apiUrl.startsWith("https://") || apiUrl.startsWith("http://"))
@@ -55,6 +57,7 @@ ksp {
 }
 
 dependencies {
+    implementation(libs.osmdroid)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.okhttp)
     implementation(libs.androidx.room.runtime)
