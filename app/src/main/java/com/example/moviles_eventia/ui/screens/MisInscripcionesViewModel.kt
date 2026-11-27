@@ -7,6 +7,7 @@ import com.example.moviles_eventia.repositories.CuentaRepository
 import com.example.moviles_eventia.repositories.InscripcionRepository
 import com.example.moviles_eventia.repositories.SesionRequeridaException
 import com.example.moviles_eventia.repositories.mensajeParaUsuario
+import com.example.moviles_eventia.repositories.registrarFalloLectura
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -82,6 +83,7 @@ class MisInscripcionesViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                registrarFalloLectura("GET /me/attendances", e)
                 if (actual == version) {
                     _uiState.update {
                         it.copy(

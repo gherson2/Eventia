@@ -53,6 +53,9 @@ class DetalleEventoViewModel @Inject constructor(
     private var consulta: Job? = null
     private var modificacion: Job? = null
     private var generacion = 0L
+    private var activa = false
+    private var seReanudo = false
+    private var refrescoPendiente = false
     private val acceso = Channel<Unit>(Channel.CONFLATED)
     val solicitarAcceso = acceso.receiveAsFlow()
 
@@ -60,6 +63,7 @@ class DetalleEventoViewModel @Inject constructor(
         viewModelScope.launch {
             cuenta.usuario.map { it?.id }.distinctUntilChanged().collect { usuarioId ->
                 generacion++
+                refrescoPendiente = false
                 consulta?.cancel()
                 modificacion?.cancel()
                 _uiState.update {
@@ -74,6 +78,31 @@ class DetalleEventoViewModel @Inject constructor(
         }
     }
 
+    fun reanudar() {
+        activa = true
+        // El constructor ya solicita la primera carga. No duplicarla al abrir.
+        if (!seReanudo) {
+            seReanudo = true
+            return
+        }
+        refrescoPendiente = true
+        _uiState.update { it.copy(datosRecientes = false) }
+        refrescarSiPendiente()
+    }
+
+    fun pausar() {
+        activa = false
+        _uiState.update { it.copy(datosRecientes = false) }
+        // No cancelar una inscripción: el servidor puede haberla procesado.
+    }
+
+    private fun refrescarSiPendiente() {
+        if (!activa || !refrescoPendiente ||
+            consulta?.isActive == true || modificacion?.isActive == true) return
+        refrescoPendiente = false
+        cargar()
+    }
+
     fun cargar() {
         if (consulta?.isActive == true || modificacion?.isActive == true) return
         val version = generacion
@@ -85,6 +114,11 @@ class DetalleEventoViewModel @Inject constructor(
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 if (version == generacion) mostrarError(e)
+            } finally {
+                if (version == generacion) {
+                    consulta = null
+                    refrescarSiPendiente()
+                }
             }
         }
     }
@@ -134,7 +168,11 @@ class DetalleEventoViewModel @Inject constructor(
                     else -> mostrarError(e)
                 }
             } finally {
-                if (version == generacion) _uiState.update { it.copy(modificandoInscripcion = false) }
+                if (version == generacion) {
+                    modificacion = null
+                    _uiState.update { it.copy(modificandoInscripcion = false) }
+                    refrescarSiPendiente()
+                }
             }
         }
     }

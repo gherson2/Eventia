@@ -184,6 +184,10 @@ fun EventiaApp() {
                 ) {
                     val vm: DetalleEventoViewModel = hiltViewModel()
                     val estado by vm.uiState.collectAsStateWithLifecycle()
+                    LifecycleResumeEffect(vm) {
+                        vm.reanudar()
+                        onPauseOrDispose { vm.pausar() }
+                    }
                     LaunchedEffect(vm, navController) {
                         vm.solicitarAcceso.collect {
                             navController.navigate("acceso") { launchSingleTop = true }

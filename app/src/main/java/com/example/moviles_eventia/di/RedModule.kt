@@ -11,6 +11,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.OkHttpClient
 import com.example.moviles_eventia.api.AutorizacionInterceptor
+import com.example.moviles_eventia.api.ReintentoLecturaInterceptor
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -20,6 +21,7 @@ object RedModule {
     fun proporcionarCliente(interceptor: AutorizacionInterceptor): OkHttpClient =
         OkHttpClient.Builder()
             .retryOnConnectionFailure(false)
+            .addInterceptor(ReintentoLecturaInterceptor())
             .addInterceptor(interceptor)
             .build()
 

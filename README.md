@@ -1,3 +1,4 @@
+
 # Eventia
 
 Aplicación Android del proyecto final de Programación de Aplicaciones Móviles 1.
@@ -6,6 +7,16 @@ conservando el paquete y la configuración de `Pro_final_Moviles`. En el siguien
 avance se integró Hilt para gestionar las dependencias existentes. Se añadieron
 favoritos, caché, cuenta, inscripciones y mapa en este proyecto.
 No representa la entrega completa ni una calificación.
+
+## Video de demostración
+
+[Ver el video en Google Drive](https://drive.google.com/file/d/1YLYNH6o98RzUyPDxGXpd3Ad3Npgp5rT1/view?usp=sharing)
+
+El video preparado presenta primero el recorrido por las carpetas y el código
+en Android Studio, y después la demostración de la aplicación en el teléfono,
+con narración. El enlace de Drive fue proporcionado por el autor.
+Antes de entregar, comprobar la reproducción en una ventana de incógnito y
+configurar el acceso como **Cualquier persona con el enlace · Lector**.
 
 ## Funciones de esta etapa
 
@@ -343,8 +354,10 @@ ausencia de contraseña en sus claves. No certifican la interfaz en un teléfono
 `CuentaPantallasTest` contiene dos pruebas instrumentadas de los composables
 con estados ficticios, sin modificar la sesión real. Requieren ejecutarse
 expresamente en un dispositivo o emulador; compilar el APK no significa ejecutarlas.
-Las pruebas de inscripciones también usan MockWebServer y estados ficticios;
-no se inscriben ni cancelan usuarios en el servidor público.
+Las pruebas habituales de inscripciones usan MockWebServer y estados ficticios.
+`InscripcionRealAutorizadaTest` es independiente: sí inscribe/cancela en el
+backend configurado y exige autorización explícita y un evento concreto.
+No se habilita con `eventia.liveReadOnly=true` ni durante una ejecución normal.
 `InscripcionPantallaTest` comprueba botones con composables aislados y requiere
 ejecución instrumentada para certificar la interfaz.
 `MisInscripcionesPantallaTest` contiene casos de pestañas, apertura del detalle,
@@ -478,7 +491,7 @@ pasos para etiquetar la versión final después de verificarla.
 La [matriz de requisitos](docs/REQUISITOS.md) relaciona cada RF con su implementación
 y distingue pruebas automáticas de verificaciones finales en teléfono.
 
-## Última validación del mapa
+## Validación anterior del mapa
 
 - `assembleDebug`, `testDebugUnitTest`, `lintDebug` y `assembleDebugAndroidTest`
   completados; **143 pruebas JVM aprobadas**, sin fallos. Lint: 26 advertencias.
@@ -487,7 +500,8 @@ y distingue pruebas automáticas de verificaciones finales en teléfono.
 - El catálogo integra búsqueda, filtros y avisos en su lista desplazable para
   no ocultar las tarjetas en pantallas de poca altura.
 - **17 pruebas Android aprobadas** en un 21061110AG con Android 13:
-  última repetición `OK (17 tests)`, 37,211 s, ejecutadas directamente con ADB.
+  última repetición `OK (17 tests)`, 39,518 s, ejecutadas directamente con ADB
+  el 27 de noviembre de 2026, con la corrección del refresco del detalle instalada.
 - Incluyen persistencia y migración/caché de Room en bases aisladas, Cuenta,
   inscripciones ficticias, seis casos del mapa (incluido toque de marcador nativo)
   y navegación de la app real catálogo → detalle → mapa → resumen → detalle.
@@ -513,24 +527,148 @@ Para repetir tras compilar e instalar los APK debug y de pruebas:
 adb shell am instrument -w -r -e eventia.liveReadOnly true com.example.moviles_eventia.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-Sin `eventia.liveReadOnly=true`, se omite la prueba que requiere el backend real.
+Sin `eventia.liveReadOnly=true`, se omiten las pruebas que requieren el backend real.
 El resultado anterior no certifica todavía modo avión, rotación física ni
 escrituras de cuenta/inscripción con el servidor.
 
-## Lo que sigue pendiente
+## Corrección del refresco del detalle (27 de noviembre de 2026)
 
-- Comprobar en dispositivo la persistencia de favoritos tras cierre forzado.
-- Comprobar el aviso global y el detalle de favoritos en modo avión y tras recuperar Internet.
+- `LifecycleResumeEffect` conecta la reanudación del destino del evento con su
+  ViewModel. Al volver desde otra pantalla o desde segundo plano, vuelve a leer
+  cupos e inscripción sin vaciar el evento mostrado ni recrear su lista.
+- La primera reanudación no duplica la carga inicial. Mientras se comprueban
+  los datos de regreso, no se permiten nuevas operaciones con datos antiguos.
+- Si hay una consulta o inscripción en curso, se agrupa un refresco de lectura
+  para cuando termine. Salir de la pantalla no cancela ni repite una escritura.
+  Si vuelve a salir antes de terminar, el refresco espera a otra reanudación.
+- Diez pruebas JVM nuevas cubren dos detalles del mismo evento, cambios de cupos
+  e inscripción, cancelación, fallo de red, cargas pendientes y escrituras en curso.
+- `assembleDebug`, `testDebugUnitTest`, `lintDebug` y `assembleDebugAndroidTest`
+  completados correctamente: **153 pruebas JVM aprobadas**, sin fallos;
+  Lint sin errores bloqueantes y 15 advertencias.
+- El archivo local `app/build.gradle.kts` ya no contiene comandos Git y compila.
+  La corrección y este cambio aún deben guardarse en un commit.
+- Después de desbloquear el teléfono, se instalaron ambos APK con `adb install -r`
+  y se repitieron las pruebas Android con esta corrección: **17 aprobadas**,
+  `OK (17 tests)` en 39,518 s, incluida la navegación real de lectura.
+  No se registraron cuentas ni se enviaron inscripciones/cancelaciones reales.
+
+## Verificación ampliada en celular (27 de noviembre de 2026)
+
+- Compilación debug y APK de pruebas, `testDebugUnitTest` y `lintDebug` correctos:
+  **153 pruebas JVM**, sin fallos; Lint: **15 advertencias**, sin errores.
+- Instalación con `adb install -r`, sin borrar los datos existentes. Suite completa
+  ejecutada en el 21061110AG con Android 13: **`OK (33 tests)` en 55,991 s**,
+  con `eventia.liveReadOnly=true`, sin casos omitidos.
+- Con el backend público: catálogo/detalle/mapa, búsqueda combinada con categoría,
+  regreso, limpieza, rotación real de la actividad a horizontal conservando filtros
+  y recorrido evento → lugar → mismo evento → regreso.
+- Con servidor HTTP local, Retrofit e interceptor reales: registro, login,
+  recuperación de sesión tras reabrir DataStore, logout conservando favoritos,
+  inscripción, consulta de inscripciones, cancelación, 401 y conflicto 409.
+  El 409 comprueba refresco y una sola escritura ante doble invocación.
+- Room aislado: caché y detalle favorito después de cerrar/reabrir la base,
+  desconexión inyectada sin solicitudes HTTP, error 503 conservando datos y
+  recuperación que reemplaza la caché. También pasó quitar/Deshacer con snackbar
+  y Room reales. No se cambió el modo avión del teléfono.
+- UI con ventana de prueba de 320×480 dp y fuente al 160 %: catálogo con avisos,
+  detalle extenso y Perfil permiten alcanzar sus acciones mediante desplazamiento.
+  No se cambió la fuente global.
+- Cuatro pruebas de indicaciones interceptan el intent y sus errores. Además,
+  ADB abrió Google Maps mediante un intent `geo:` y se regresó a Eventia.
+  Esto no certifica todavía el recorrido completo del botón real hasta Maps.
+- Durante la preparación se corrigieron dos problemas del test: título ambiguo
+  entre búsqueda/tarjeta y espera de categorías que cargan en paralelo al catálogo.
+  La ejecución anterior de 32/33 no se contó como aprobada; la repetición final
+  completó los 33 casos.
+
+Resultados y límites por escenario: [docs/PRUEBAS_MANUALES.md](docs/PRUEBAS_MANUALES.md).
+Las cuentas, bases y sesiones de esta etapa fueron temporales: no se crearon
+cuentas ni se cambiaron favoritos o inscripciones personales en el servidor
+público durante esa ejecución. La prueba autorizada posterior se detalla abajo.
+
+## Inscripción real autorizada y recuperación de lecturas
+
+Después de que el usuario iniciara sesión y autorizara inscribir/cancelar:
+
+- La app recuperó la sesión al arrancar y consultó Perfil. En el evento 21,
+  “Meetup de desarrolladores Android”, se comprobó el estado inicial no inscrito.
+- El botón real confirmó la inscripción, cupos **80 → 79**, y Perfil incorporó
+  el evento. Desde su tarjeta se abrió el detalle, se canceló, los cupos volvieron
+  a **80** y Perfil retiró la inscripción de prueba (próximas **0 → 1 → 0**).
+- `InscripcionRealAutorizadaTest`: **`OK (1 test)` en 14,565 s**. Los primeros
+  intentos detectaron fallos de lectura y cancelaron la inscripción en `finally`;
+  no se contó ninguno como aprobado. No se tocaron inscripciones preexistentes.
+- Se diagnosticaron `IOException → EOFException` en GET `/me` y
+  `/me/attendances`. `ReintentoLecturaInterceptor` permite un solo reintento de
+  GET ante EOF/socket cerrado, antes de entregar cabeceras; no reintenta POST,
+  DELETE, estados HTTP, timeout ni cambios de sesión. Autorización se comprueba
+  de nuevo en el reintento. Los errores de lectura tienen diagnóstico debug
+  limitado a ruta/tipo/estado, sin cuerpos, correos, tokens ni contraseñas.
+- **La intermitencia de red no está eliminada**: la prueba aprobada aún mostró
+  un error de lectura en Perfil y comprobó recuperación con un único reintento
+  desde la UI. No hay reenvío automático de inscripciones/cancelaciones.
+- Después del cambio: **161 pruebas JVM aprobadas**, compilaciones y Lint
+  correctos (15 advertencias, sin errores). Regresión sin escrituras:
+  **`OK (33 tests)` en 60,472 s**, excluyendo explícitamente el test autorizado.
+  Son **34 casos Android aprobados en dos ejecuciones separadas**, no una suite
+  de 34 ejecutada en una sola tanda.
+- La sesión quedó abierta; no se hizo logout ni se crearon otras cuentas.
+  La consulta pública final del evento confirmó 80 cupos.
+
+La prueba real queda desactivada por defecto. Para repetirla se necesita permiso
+nuevo para la cuenta/evento y ambos argumentos `eventia.liveWrites=true` y
+`eventia.eventTitle` (título exacto). Nunca ejecutarla en una cuenta ajena.
+
+## Comprobaciones finales para grabar el video
+
+`PreparacionVideoRealTest` completó dos fases optativas en el celular:
+online `OK (1 test)` en **10,228 s** y offline/recuperación/Maps `OK (1 test)`
+en **35,328 s**. Quedó comprobado:
+
+- Búsqueda sin coincidencias y limpieza; detalle y mapa con resumen conservados
+  al solicitar rotación horizontal de la actividad.
+- Modo avión real con Wi-Fi desactivado, cierre forzado mediante `am force-stop`
+  y reapertura: catálogo con antigüedad, mismo favorito existente y detalle local.
+  La inscripción queda bloqueada con la copia offline.
+- Recuperación real de Internet: el aviso global desaparece por callback Android;
+  Actualizar retira la marca de copia del detalle y la de caché del catálogo.
+- El botón real “Cómo llegar” del detalle abrió Google Maps en primer plano.
+
+No se cambiaron favoritos ni se enviaron nuevas inscripciones. La conectividad
+se restauró en `finally`: modo avión apagado, Wi-Fi encendido y red validada.
+La app quedó abierta. Las fases requieren `eventia.videoPhase` explícito y la
+offline debe orquestarse restaurando los estados iniciales.
+
+Total verificado: **161 JVM y 36 casos Android**, estos últimos en cuatro
+ejecuciones separadas (33 + 1 + 1 + 1). Compilación debug, APK de pruebas y
+Lint correctos; 15 advertencias, sin errores. No equivale a cobertura exhaustiva.
+
+Guion listo para grabar: [docs/GUION_VIDEO.md](docs/GUION_VIDEO.md).
+
+## Cobertura adicional y entrega pendientes
+
 - La migración Room pasó con una base aislada; falta comprobar una instalación
-  previa real, la reapertura del catálogo en modo avión y la actualización al recuperar conexión.
-- Verificar registro, login, logout, rotación y restauración de sesión en dispositivo.
-- Verificar en dispositivo inscripción, cancelación, 409, regreso del login y actualización de cupos.
+  previa real. La reapertura offline y la recuperación de red actuales sí pasaron.
+- Registro/logout y formulario de acceso completo contra el servidor público:
+  el usuario informó acceso exitoso y la sesión recuperada sí pasó en el teléfono;
+  no se automatizó el ingreso de credenciales ni se cerró esa sesión.
+- Regreso desde el formulario de acceso al evento original; el recorrido con
+  sesión ya abierta, inscripción → Perfil → detalle → cancelación → Perfil sí pasó.
+  El 409 solo pasó con servidor controlado.
 - Las pestañas y protección entre cuentas pasaron con datos ficticios; falta
-  comprobar el regreso del detalle tras cancelar y el cambio de cuenta real.
+  comprobar el cambio de cuenta real y el regreso entre dos detalles del mismo
+  evento después de modificar una inscripción.
 - Verificar visualmente las teselas y sus errores de red; confirmar la aprobación
   de la biblioteca de mapas por el docente.
-- Validación completa de accesibilidad, tamaños de pantalla y rotación.
-- Video final, documentación completa de la entrega y etiqueta `v1.0` cuando corresponda.
+- Validación completa de accesibilidad y otros tamaños; rotación del formulario
+  y sensor físico (lista, contenido del detalle y resumen del mapa sí pasaron con
+  rotación de actividad).
+- La voz ya se recortó y sincronizó por escenas con el video de 6:00, sin cambiar
+  la velocidad del video ni de la narración. El autor compartió el enlace de Drive
+  en la sección **Video de demostración**; falta comprobar la reproducción para
+  terceros. Confirmar con el docente la duración ampliada (la consigna indica
+  3–4 minutos). Commit final y etiqueta `v1.0` siguen pendientes.
 
 El catálogo sin conexión requiere haber descargado datos al menos una vez.
 Los favoritos y la caché se almacenan por separado.

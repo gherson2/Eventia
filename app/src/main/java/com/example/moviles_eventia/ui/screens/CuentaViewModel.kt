@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.moviles_eventia.models.Usuario
 import com.example.moviles_eventia.repositories.CuentaRepository
 import com.example.moviles_eventia.repositories.mensajeParaUsuario
+import com.example.moviles_eventia.repositories.registrarFalloLectura
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -59,6 +60,7 @@ class CuentaViewModel @Inject constructor(
                 repositorio.actualizarUsuario()
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                registrarFalloLectura("GET /me", e)
                 _uiState.update { it.copy(error = e.mensajeParaUsuario()) }
             } finally {
                 _uiState.update { it.copy(operando = false) }

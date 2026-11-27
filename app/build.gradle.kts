@@ -9,9 +9,7 @@ plugins {
 
 val local = Properties().apply {
     val file = rootProject.file("local.properties")
-    if (file.exists()) file.inputStream().use { load(it) }git add .
-    git commit -m "feat: agregar mapa de eventos con filtros, marcadores y acceso al detalle"
-    git push
+    if (file.exists()) file.inputStream().use { load(it) }
 }
 val apiUrl = local.getProperty("EVENTIA_BASE_URL", "https://eventia.jmacboy.dev/api/")
 require(apiUrl.startsWith("https://") || apiUrl.startsWith("http://"))
@@ -89,6 +87,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.mockwebserver)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.retrofit)
