@@ -12,12 +12,6 @@ No representa la entrega completa ni una calificación.
 
 [Ver el video en Google Drive](https://drive.google.com/file/d/1YLYNH6o98RzUyPDxGXpd3Ad3Npgp5rT1/view?usp=sharing)
 
-El video preparado presenta primero el recorrido por las carpetas y el código
-en Android Studio, y después la demostración de la aplicación en el teléfono,
-con narración. El enlace de Drive fue proporcionado por el autor.
-Antes de entregar, comprobar la reproducción en una ventana de incógnito y
-configurar el acceso como **Cualquier persona con el enlace · Lector**.
-
 ## Funciones de esta etapa
 
 - Explorar con pestañas **Eventos** y **Lugares**.
@@ -486,8 +480,6 @@ cartografía offline. Los datos de eventos guardados son independientes de las
 teselas. Un fallo de teselas ofrece reintento sin cerrar la pantalla.
 No se solicita ubicación del usuario; RF-10 es opcional y no está implementado.
 
-La [guía de entrega y defensa](docs/ENTREGA.md) incluye el guion del video y los
-pasos para etiquetar la versión final después de verificarla.
 La [matriz de requisitos](docs/REQUISITOS.md) relaciona cada RF con su implementación
 y distingue pruebas automáticas de verificaciones finales en teléfono.
 
@@ -620,9 +612,9 @@ La prueba real queda desactivada por defecto. Para repetirla se necesita permiso
 nuevo para la cuenta/evento y ambos argumentos `eventia.liveWrites=true` y
 `eventia.eventTitle` (título exacto). Nunca ejecutarla en una cuenta ajena.
 
-## Comprobaciones finales para grabar el video
+## Verificación final en dispositivo
 
-`PreparacionVideoRealTest` completó dos fases optativas en el celular:
+Se completaron dos fases optativas en el celular:
 online `OK (1 test)` en **10,228 s** y offline/recuperación/Maps `OK (1 test)`
 en **35,328 s**. Quedó comprobado:
 
@@ -637,14 +629,11 @@ en **35,328 s**. Quedó comprobado:
 
 No se cambiaron favoritos ni se enviaron nuevas inscripciones. La conectividad
 se restauró en `finally`: modo avión apagado, Wi-Fi encendido y red validada.
-La app quedó abierta. Las fases requieren `eventia.videoPhase` explícito y la
-offline debe orquestarse restaurando los estados iniciales.
+La app quedó abierta y se restauraron los estados iniciales de conectividad.
 
 Total verificado: **161 JVM y 36 casos Android**, estos últimos en cuatro
 ejecuciones separadas (33 + 1 + 1 + 1). Compilación debug, APK de pruebas y
 Lint correctos; 15 advertencias, sin errores. No equivale a cobertura exhaustiva.
-
-Guion listo para grabar: [docs/GUION_VIDEO.md](docs/GUION_VIDEO.md).
 
 ## Cobertura adicional y entrega pendientes
 
@@ -664,11 +653,8 @@ Guion listo para grabar: [docs/GUION_VIDEO.md](docs/GUION_VIDEO.md).
 - Validación completa de accesibilidad y otros tamaños; rotación del formulario
   y sensor físico (lista, contenido del detalle y resumen del mapa sí pasaron con
   rotación de actividad).
-- La voz ya se recortó y sincronizó por escenas con el video de 6:00, sin cambiar
-  la velocidad del video ni de la narración. El autor compartió el enlace de Drive
-  en la sección **Video de demostración**; falta comprobar la reproducción para
-  terceros. Confirmar con el docente la duración ampliada (la consigna indica
-  3–4 minutos). Commit final y etiqueta `v1.0` siguen pendientes.
+- Comprobar el acceso al video para terceros y confirmar su duración con el
+  docente (la consigna indica 3–4 minutos). La etiqueta `v1.0` sigue pendiente.
 
 El catálogo sin conexión requiere haber descargado datos al menos una vez.
 Los favoritos y la caché se almacenan por separado.
